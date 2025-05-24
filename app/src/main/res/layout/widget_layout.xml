@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textColor="@color/color999"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/widget_codes1"
@@ -68,7 +68,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textColor="@color/color999"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/widget_codes2"
