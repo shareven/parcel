@@ -8,7 +8,9 @@
 
 欢迎下载和使用！有问题或建议请提issue。
 
-# 下载 | Download
+# 下载 | Download  
+
+最新版本：v1.0.1
 
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
