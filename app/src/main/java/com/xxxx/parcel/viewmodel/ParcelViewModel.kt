@@ -7,12 +7,20 @@ import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.SmsParser
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewModel() {
-    
+    // 所有短信列表
+    private val _allMessages = MutableStateFlow<List<SmsModel>>(emptyList())
+
     // 解析成功的短信
     private val _successSmsData = MutableStateFlow<List<SmsData>>(emptyList())
     val successSmsData: StateFlow<List<SmsData>> = _successSmsData
@@ -22,44 +30,102 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
     val failedMessages: StateFlow<List<SmsModel>> = _failedMessages
 
     // 同一地址的取件码列表
-    private val _parcels = MutableStateFlow<List<ParcelData>>(emptyList())
-    val parcels: StateFlow<List<ParcelData>> = _parcels
+    private val _parcelsData = MutableStateFlow<List<ParcelData>>(emptyList())
+    val parcelsData: StateFlow<List<ParcelData>> = _parcelsData
 
-    fun clearData(){
+    // 时间过滤器
+    private val _timeFilter = MutableStateFlow(0)
+    val timeFilter: StateFlow<Int> = _timeFilter.asStateFlow()
+
+    fun setTimeFilter(i: Int) {
+        _timeFilter.value = i
+        handleReceivedSms()
+    }
+
+    fun clearData() {
         _successSmsData.value = emptyList()
         _failedMessages.value = emptyList()
-        _parcels.value = emptyList()
+        _parcelsData.value = emptyList()
+    }
+
+    fun getAllMessage(list: List<SmsModel>) {
+
+        _allMessages.value = list
+        handleReceivedSms()
     }
 
     // 处理接收到的短信
-    fun handleReceivedSms(sms: SmsModel) {
-        viewModelScope.launch {
-            val currentSuccessful = _successSmsData.value.toMutableList()
-            val currentParcels = _parcels.value.toMutableList()
-            val currentFailed = _failedMessages.value.toMutableList()
+    fun handleReceivedSms() {
+        clearData()
 
-            val result = smsParser.parseSms(sms.body)
-            
-            if (result.success) {
-                Log.d("成功短信", sms.body)
-                currentSuccessful.add(SmsData( result.address,result.code,sms))
-                // 把同一地址的取件码添加到 parcels 列表中
-                currentParcels.find { it.address == result.address }?.let {
-                    it.codes.add(result.code)
-                    it.codes.sort()
-                } ?: run {
-                    currentParcels.add(ParcelData(result.address, mutableListOf(result.code)))
+            _allMessages.value.forEach { sms ->
+                val currentSuccessful = _successSmsData.value.toMutableList()
+                val currentParcels = _parcelsData.value.toMutableList()
+                val currentFailed = _failedMessages.value.toMutableList()
+
+                viewModelScope.launch {
+
+                val result = smsParser.parseSms(sms.body)
+
+
+                val currentTime = System.currentTimeMillis()
+                val messageTime = sms.timestamp
+
+                var includeMessage = true
+
+                if (_timeFilter.value == 0) {
+                    // 不进行时间过滤
+                    includeMessage = true
+                } else {
+                    // 获取当前时间和消息时间的日期部分
+                    val currentLocalTime = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(currentTime),
+                        ZoneId.systemDefault()
+                    ).toLocalDate()
+                    val messageLocalTime = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(messageTime),
+                        ZoneId.systemDefault()
+                    ).toLocalDate()
+
+                    // 计算两个日期之间的天数差
+                    val daysDifference =
+                        ChronoUnit.DAYS.between(messageLocalTime, currentLocalTime)
+
+                    // 根据选择的时间范围判断是否包含该消息
+                    includeMessage = daysDifference < _timeFilter.value
                 }
-            } else {
-                Log.e("失败短信", sms.body)
-                currentFailed.add(sms)
+
+                if (includeMessage) {
+                    if (result.success) {
+                        Log.d("成功短信", sms.body)
+                        currentSuccessful.add(SmsData(result.address, result.code, sms, sms.id))
+                        // 把同一地址的取件码添加到 parcels 列表中
+                        currentParcels.find { it.address == result.address }?.let {
+                            it.codes.add(result.code)
+                            it.codes.sort()
+                        } ?: run {
+                            currentParcels.add(
+                                ParcelData(
+                                    result.address,
+                                    mutableListOf(result.code)
+                                )
+                            )
+                        }
+                    } else {
+                        Log.e("失败短信", sms.body)
+                        currentFailed.add(sms)
+                    }
+
+
+                    currentParcels.sortBy { -it.codes.size }
+                    _successSmsData.emit(currentSuccessful)
+                    _parcelsData.emit(currentParcels)
+                    _failedMessages.emit(currentFailed)
+
+                }
+
+
             }
-
-            currentParcels.sortBy { -it.codes.size }
-            _successSmsData.emit(currentSuccessful)
-            _parcels.emit(currentParcels)
-            _failedMessages.emit(currentFailed)
-
         }
     }
 
@@ -67,6 +133,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
     fun addCustomAddressPattern(pattern: String) {
         smsParser.addCustomAddressPattern(pattern)
     }
+
     fun addCustomCodePattern(pattern: String) {
         smsParser.addCustomCodePattern(pattern)
     }

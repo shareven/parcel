@@ -11,14 +11,18 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.navigation.NavType
@@ -41,13 +45,14 @@ import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
 import androidx.core.net.toUri
 
-val smsParser = SmsParser()
-var viewModel = ParcelViewModel(smsParser)
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
     val context= this
+    val smsParser = SmsParser()
+    val viewModel = ParcelViewModel(smsParser)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -55,16 +60,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         // 注册 ActivityResultLauncher
         appDetailsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             init()
-            setContent {
-                App(context, guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
-            }
+
         }
 
         getAllCustomPatterns(this, viewModel)
         init()
 
         setContent {
-            App(context, guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
+            App(context, viewModel,guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
         }
     }
 
@@ -83,13 +86,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         )
     }
 
-    fun readAndParseSms() {
+      fun readAndParseSms() {
         val context = applicationContext
         val smsList = SmsUtil.readAllSms(context)
-        viewModel.clearData()
-        smsList.forEach { sms ->
-            viewModel.handleReceivedSms(sms)
-        }
+
+        viewModel.getAllMessage(smsList)
+
         // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
         ParcelWidget.updateAppWidget(
             context,
@@ -109,14 +111,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 arrayOf(
                     Manifest.permission.RECEIVE_SMS,
                     Manifest.permission.READ_SMS,
+                    Manifest.permission.MANAGE_DEVICE_POLICY_SMS,
                 ),
                 1
             )
             if (PermissionUtil.hasSmsPermissions(this)) {
                 readAndParseSms()
                 startSmsDeletionMonitoring()
-            }else{
-                Toast.makeText(this, "短信权限被拒绝", Toast.LENGTH_SHORT).show()
             }
 
         } else {
@@ -125,7 +126,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             startSmsDeletionMonitoring()
         }
         setContent {
-            App(context, guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
+            App(context,viewModel, guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
         }
     }
 
@@ -148,6 +149,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     } else {
                         guideToSettings()
                     }
+                    
                 }
             }
         }
@@ -169,7 +171,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun App(context: Context,guideToSettings:()->Unit,readAndParseSms:()->Unit){
+fun App(context: Context,viewModel:ParcelViewModel,guideToSettings:()->Unit,readAndParseSms:()->Unit){
     ParcelTheme {
         val navController = rememberNavController()
         Box(

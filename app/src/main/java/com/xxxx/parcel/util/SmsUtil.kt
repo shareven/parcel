@@ -1,11 +1,15 @@
 package com.xxxx.parcel.util
 
+
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.xxxx.parcel.model.SmsModel
 import androidx.core.net.toUri
+import com.xxxx.parcel.model.SmsModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class SmsUtil {
     companion object {
@@ -15,13 +19,22 @@ class SmsUtil {
             val uri: Uri = "content://sms/inbox".toUri()
 
             try {
-                val cursor = contentResolver.query(uri, arrayOf("_id","body"), null, null, null)
+                val cursor = contentResolver.query(
+                    uri,
+                    arrayOf("_id", "body", "date"),
+                    null,
+                    null,
+                    "date DESC"
+                )
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         do {
                             val id = cursor.getLong(cursor.getColumnIndexOrThrow("_id"))
                             val messageBody = cursor.getString(cursor.getColumnIndexOrThrow("body"))
-                            smsList.add(SmsModel(id,messageBody))
+                            val timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("date"))
+
+
+                            smsList.add(SmsModel(id, messageBody, timestamp))
                         } while (cursor.moveToNext())
                     }
                     cursor.close()
@@ -33,4 +46,11 @@ class SmsUtil {
             return smsList
         }
     }
+}
+
+fun dateToString(timestamp: Long): String {
+    // 时间戳转可读格式
+    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        .format(Date(timestamp))
+
 }

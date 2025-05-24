@@ -69,34 +69,34 @@ class ParcelWidget : AppWidgetProvider() {
             // 从 ViewModel 获取最新的取件码信息
             val total = viewModel?.successSmsData?.value?.size ?: 0
 
-            val latestMessage = viewModel?.parcels?.value?.firstOrNull()
+            val latestMessage = viewModel?.parcelsData?.value?.firstOrNull()
             var address1 = latestMessage?.address ?: ""
             var codeList1 = ""
             if (latestMessage != null) {
                 codeList1 = latestMessage.codes.joinToString(separator = "\n")
                 address1 += "（${latestMessage.codes.size}）"
             } else {
-                codeList1 = "无取件码"
+                codeList1 = ""
             }
 
-            val secondMessage = viewModel?.parcels?.value?.getOrNull(1)
+            val secondMessage = viewModel?.parcelsData?.value?.getOrNull(1)
             var address2 = secondMessage?.address ?: ""
             var codeList2 = ""
             if (secondMessage != null) {
                 codeList2 = secondMessage.codes.joinToString(separator = "\n")
                 address2 += "（${secondMessage.codes.size}）"
             } else {
-                codeList2 = "无取件码"
+                codeList2 = ""
             }
              
-            val thirdMessage = viewModel?.parcels?.value?.getOrNull(2)
+            val thirdMessage = viewModel?.parcelsData?.value?.getOrNull(2)
             var address3 = thirdMessage?.address ?: ""
             var codeList3 = ""
             if (thirdMessage != null) {
                 codeList3 = thirdMessage.codes.joinToString(separator = "\n")
                 address3 += "（${thirdMessage.codes.size}）"
             } else {
-                codeList3 = "无取件码"
+                codeList3 = ""
             }
 
 
