@@ -7,7 +7,6 @@ import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.SmsParser
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,11 +33,11 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
     val parcelsData: StateFlow<List<ParcelData>> = _parcelsData
 
     // 时间过滤器
-    private val _timeFilter = MutableStateFlow(0)
-    val timeFilter: StateFlow<Int> = _timeFilter.asStateFlow()
+    private val _timeFilterIndex = MutableStateFlow(0)
+    val timeFilterIndex: StateFlow<Int> = _timeFilterIndex.asStateFlow()
 
-    fun setTimeFilter(i: Int) {
-        _timeFilter.value = i
+    fun setTimeFilterIndex(i: Int) {
+        _timeFilterIndex.value = i
         handleReceivedSms()
     }
 
@@ -57,13 +56,12 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
     // 处理接收到的短信
     fun handleReceivedSms() {
         clearData()
-
+        viewModelScope.launch {
             _allMessages.value.forEach { sms ->
                 val currentSuccessful = _successSmsData.value.toMutableList()
                 val currentParcels = _parcelsData.value.toMutableList()
                 val currentFailed = _failedMessages.value.toMutableList()
 
-                viewModelScope.launch {
 
                 val result = smsParser.parseSms(sms.body)
 
@@ -73,7 +71,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
 
                 var includeMessage = true
 
-                if (_timeFilter.value == 0) {
+                if (_timeFilterIndex.value == 0) {
                     // 不进行时间过滤
                     includeMessage = true
                 } else {
@@ -92,7 +90,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                         ChronoUnit.DAYS.between(messageLocalTime, currentLocalTime)
 
                     // 根据选择的时间范围判断是否包含该消息
-                    includeMessage = daysDifference < _timeFilter.value
+                    includeMessage = daysDifference < _timeFilterIndex.value
                 }
 
                 if (includeMessage) {

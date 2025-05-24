@@ -1,6 +1,7 @@
 package com.xxxx.parcel.ui
 
 import android.annotation.SuppressLint
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -32,23 +32,23 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.util.PermissionUtil
+import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.style.TextAlign
 import com.xxxx.parcel.widget.ParcelWidget
-import android.appwidget.AppWidgetManager
+import kotlinx.coroutines.launch
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,10 +81,10 @@ fun HomeScreen(
         "近9天",
         "近10天",
     )
-    var selectedTimeFilterIndex by remember { mutableStateOf(0) }
 
-    val succssData by viewModel.successSmsData.collectAsState()
+    val selectedTimeFilterIndex by viewModel.timeFilterIndex.collectAsState()
     val failedData by viewModel.failedMessages.collectAsState()
+    val succssData by viewModel.successSmsData.collectAsState()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -130,14 +130,14 @@ fun HomeScreen(
                             color = Color.White
                         )
                     }
-                    
+
                     Spacer(Modifier.width(16.dp))
                     TextButton(
                         onClick = { navController.navigate("about") },
                     ) {
                         Text(text = "关于")
                     }
-                    
+
                 }
             )
         }
@@ -173,15 +173,15 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                             .clickable {
-                                selectedTimeFilterIndex = index
-                                viewModel.setTimeFilter(index)
+                                saveIndex(context,index)
+                                viewModel.setTimeFilterIndex(index)
                                 // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
-        ParcelWidget.updateAppWidget(
-            context,
-            AppWidgetManager.getInstance(context),
-            null,
-            viewModel
-        )
+                                ParcelWidget.updateAppWidget(
+                                    context,
+                                    AppWidgetManager.getInstance(context),
+                                    null,
+                                    viewModel
+                                )
                                 scope.launch { sheetState.hide() }.invokeOnCompletion {
                                     if (!sheetState.isVisible) {
                                         showBottomSheet = false
@@ -200,48 +200,56 @@ fun HomeScreen(
 @Composable
 fun List(viewModel: ParcelViewModel) {
     val parcelsData by viewModel.parcelsData.collectAsState()
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal =16.dp)
-            ,
-        verticalArrangement = Arrangement.Top,
+    if (parcelsData.isEmpty()) Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        items(parcelsData) { result ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(horizontal = 8.dp),
-            ) {
-                Text(
-                    text = result.address + "（${result.codes.size}）",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        result.codes.forEach { code ->
-                            Box(modifier = Modifier.padding(6.dp)) {
-                                Text(
-                                    text = code,
-                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-
-                                )
-                            }
-                        }
-
-
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-        }
+        Text("没有取件码",
+            style = MaterialTheme.typography.bodyLarge)
     }
+    else
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            items(parcelsData) { result ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(horizontal = 8.dp),
+                ) {
+                    Text(
+                        text = result.address + "（${result.codes.size}）",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            result.codes.forEach { code ->
+                                Box(modifier = Modifier.padding(6.dp)) {
+                                    Text(
+                                        text = code,
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+
+                                    )
+                                }
+                            }
+
+
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+            }
+        }
 }
 

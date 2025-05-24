@@ -14,17 +14,13 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,10 +36,9 @@ import com.xxxx.parcel.ui.theme.ParcelTheme
 import com.xxxx.parcel.util.PermissionUtil
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
-import com.xxxx.parcel.util.getAllCustomPatterns
+import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
-import androidx.core.net.toUri
 
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -63,7 +58,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         }
 
-        getAllCustomPatterns(this, viewModel)
+        getAllSaveData(this, viewModel)
         init()
 
         setContent {

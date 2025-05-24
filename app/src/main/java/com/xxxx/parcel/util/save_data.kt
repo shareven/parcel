@@ -4,6 +4,23 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 
+
+// 保存时间index
+fun saveIndex(context: Context, index: Int) {
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val editor = sharedPreferences.edit()
+    editor.putInt("timeFilterIndex", index)
+    editor.apply()
+}
+
+// 从 SharedPreferences 读取时间index
+fun getIndex(context: Context): Int {
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    return sharedPreferences.getInt("timeFilterIndex",0)
+}
+
 // 保存字符串列表到 SharedPreferences
 fun saveCustomPatterns(context: Context, key: String, stringSet: Set<String>) {
     val sharedPreferences: SharedPreferences =
@@ -31,15 +48,18 @@ fun addCustomPatterns(context: Context, key: String, newString: String) {
 }
 
 
-fun getAllCustomPatterns(context: Context, viewModel: ParcelViewModel) {
+fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
     val listAddr = getCustomPatterns(context, "address").toMutableList()
     val listCode = getCustomPatterns(context, "code").toMutableList()
+    val timeFilterIndex = getIndex(context)
+
     listAddr.forEach {
         viewModel.addCustomAddressPattern(it)
     }
     listCode.forEach {
         viewModel.addCustomCodePattern(it)
     }
+    viewModel.setTimeFilterIndex(timeFilterIndex)
 }
 
 
@@ -48,8 +68,8 @@ fun clearAllCustomPatternsa(context: Context, viewModel: ParcelViewModel) {
     val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
     // 获取 Editor 对象
     val editor = sharedPreferences.edit()
-    // 清除所有数据
-    editor.clear()
+   saveCustomPatterns(context,"address",mutableSetOf())
+    saveCustomPatterns(context,"code",mutableSetOf())
     // 异步提交更改
     editor.apply()
     viewModel.clearAllCustomPatterns()
