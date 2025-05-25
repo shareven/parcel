@@ -96,6 +96,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                 if (includeMessage) {
                     if (result.success) {
                         Log.d("成功短信", sms.body)
+                        Log.d("解析", "addr:${result.address} code:${result.code} ")
                         currentSuccessful.add(SmsData(result.address, result.code, sms, sms.id))
                         // 把同一地址的取件码添加到 parcels 列表中
                         currentParcels.find { it.address == result.address }?.let {
@@ -111,6 +112,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                         }
                     } else {
                         Log.e("失败短信", sms.body)
+                        Log.e("解析", "addr:${result.address} code:${result.code} ")
                         currentFailed.add(sms)
                     }
 
