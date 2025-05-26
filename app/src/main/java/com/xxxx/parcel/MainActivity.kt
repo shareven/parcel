@@ -34,6 +34,7 @@ import com.xxxx.parcel.ui.RulesScreen
 import com.xxxx.parcel.ui.SuccessSmsScreen
 import com.xxxx.parcel.ui.theme.ParcelTheme
 import com.xxxx.parcel.util.PermissionUtil
+import com.xxxx.parcel.util.PermissionUtil.showMiuiPermissionExplanationDialog
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
@@ -44,7 +45,7 @@ import com.xxxx.parcel.widget.ParcelWidget
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
-    val context= this
+    val context = this
     val smsParser = SmsParser()
     val viewModel = ParcelViewModel(smsParser)
 
@@ -53,16 +54,21 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
 
         // 注册 ActivityResultLauncher
-        appDetailsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            init()
+        appDetailsLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                init()
 
-        }
+            }
 
         getAllSaveData(this, viewModel)
         init()
 
         setContent {
-            App(context, viewModel,guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
+            App(
+                context,
+                viewModel,
+                guideToSettings = { guideToSettings() },
+                readAndParseSms = { readAndParseSms() })
         }
     }
 
@@ -81,7 +87,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         )
     }
 
-      fun readAndParseSms() {
+    fun readAndParseSms() {
         val context = applicationContext
         val smsList = SmsUtil.readAllSms(context)
 
@@ -98,18 +104,22 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     }
 
-    private  fun init(){
+    private fun init() {
+
         // 检查并请求短信权限
         if (!PermissionUtil.hasSmsPermissions(this)) {
-             ActivityCompat.requestPermissions(
+            ActivityCompat.requestPermissions(
                 this,
                 arrayOf(
                     Manifest.permission.RECEIVE_SMS,
                     Manifest.permission.READ_SMS,
-                    Manifest.permission.MANAGE_DEVICE_POLICY_SMS,
                 ),
                 1
             )
+            if (PermissionUtil.isMIUI()) {
+                //小米手机 显示引导弹窗后调用 requestMiuiSmsPermission()
+                showMiuiPermissionExplanationDialog(context)
+            }
             if (PermissionUtil.hasSmsPermissions(this)) {
                 readAndParseSms()
                 startSmsDeletionMonitoring()
@@ -121,7 +131,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             startSmsDeletionMonitoring()
         }
         setContent {
-            App(context,viewModel, guideToSettings={ guideToSettings() }, readAndParseSms = {readAndParseSms()})
+            App(
+                context,
+                viewModel,
+                guideToSettings = { guideToSettings() },
+                readAndParseSms = { readAndParseSms() })
         }
     }
 
@@ -131,23 +145,21 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        super.onRequestPermissionsResult(requestCode,permissions,grantResults)
-        when (requestCode) {
-            1 -> {
-                if (grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                   init()
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
+            if (grantResults.isNotEmpty() &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED
+            ) {
+                init()
+
+            } else {
+                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
+                    init()
                 } else {
-                    if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
-                        init()
-                    } else {
-                        guideToSettings()
-                    }
-                    
+                    guideToSettings()
                 }
             }
-        }
+
     }
 
     private fun guideToSettings() {
@@ -164,9 +176,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun App(context: Context,viewModel:ParcelViewModel,guideToSettings:()->Unit,readAndParseSms:()->Unit){
+fun App(
+    context: Context,
+    viewModel: ParcelViewModel,
+    guideToSettings: () -> Unit,
+    readAndParseSms: () -> Unit
+) {
     ParcelTheme {
         val navController = rememberNavController()
         Box(
@@ -178,7 +196,11 @@ fun App(context: Context,viewModel:ParcelViewModel,guideToSettings:()->Unit,read
                 startDestination = "home"
             ) {
                 composable("home") {
-                    HomeScreen(context,viewModel, navController,onCallBack = {guideToSettings()})
+                    HomeScreen(
+                        context,
+                        viewModel,
+                        navController,
+                        onCallBack = { guideToSettings() })
                 }
                 composable(
                     route = "add_rule?message={message}",
@@ -190,16 +212,25 @@ fun App(context: Context,viewModel:ParcelViewModel,guideToSettings:()->Unit,read
                     )
                 ) { backStackEntry ->
                     val message = backStackEntry.arguments?.getString("message") ?: ""
-                    AddRuleScreen(context,viewModel, navController,message,onCallback = {readAndParseSms()})
+                    AddRuleScreen(
+                        context,
+                        viewModel,
+                        navController,
+                        message,
+                        onCallback = { readAndParseSms() })
                 }
                 composable("rules") {
-                    RulesScreen(context,viewModel, navController,onCallback = {readAndParseSms()})
+                    RulesScreen(
+                        context,
+                        viewModel,
+                        navController,
+                        onCallback = { readAndParseSms() })
                 }
                 composable("fail_sms") {
                     FailSmsScreen(viewModel, navController)
                 }
                 composable("success_sms") {
-                    SuccessSmsScreen(viewModel,  navController)
+                    SuccessSmsScreen(viewModel, navController)
                 }
                 composable("about") {
                     AboutScreen(navController)

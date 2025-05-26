@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.core.net.toUri
 import com.xxxx.parcel.model.SmsModel
 import java.text.SimpleDateFormat
@@ -40,6 +41,8 @@ class SmsUtil {
                     cursor.close()
                 }
             } catch (e: Exception) {
+                Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_LONG).show()
+
                 Log.e("SmsUtil", "读取短信失败: ${e.message}")
             }
 
