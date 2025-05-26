@@ -140,13 +140,13 @@ fun AddRuleScreen(
                                     addCustomPatterns(
                                         context,
                                         "code",
-                                        message.replace(codePattern, """([A-Za-z0-9-]{4,})""")
+                                        message.replace(codePattern, """([\s\S]{4,})""")
                                     )
                                     viewModel.addCustomAddressPattern(addressPattern)
                                     viewModel.addCustomCodePattern(
                                         message.replace(
                                             codePattern,
-                                            """([A-Za-z0-9-]{4,})"""
+                                            """([\s\S]{4,})"""
                                         )
                                     )
                                     addressPattern = ""

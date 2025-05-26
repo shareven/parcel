@@ -115,9 +115,15 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                         Log.e("解析", "addr:${result.address} code:${result.code} ")
                         currentFailed.add(sms)
                     }
+                    //计算包裹数量
+                    currentParcels.forEach{
+                        it.num=0
+                        it.codes.forEach{x->
+                           it.num+= x.split(", ").size
+                        }
+                    }
 
-
-                    currentParcels.sortBy { -it.codes.size }
+                    currentParcels.sortBy { -it.num }
                     _successSmsData.emit(currentSuccessful)
                     _parcelsData.emit(currentParcels)
                     _failedMessages.emit(currentFailed)

@@ -34,7 +34,6 @@ class SmsUtil {
                             val messageBody = cursor.getString(cursor.getColumnIndexOrThrow("body"))
                             val timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("date"))
 
-
                             smsList.add(SmsModel(id, messageBody, timestamp))
                         } while (cursor.moveToNext())
                     }

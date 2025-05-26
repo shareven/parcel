@@ -67,14 +67,17 @@ class ParcelWidget : AppWidgetProvider() {
             viewModel: ParcelViewModel?
         ) {
             // 从 ViewModel 获取最新的取件码信息
-            val total = viewModel?.successSmsData?.value?.size ?: 0
+            var total =  0
+            viewModel?.parcelsData?.value?.forEach{
+                total+= it.num
+            }
 
             val latestMessage = viewModel?.parcelsData?.value?.firstOrNull()
             var address1 = latestMessage?.address ?: ""
             var codeList1 = ""
             if (latestMessage != null) {
                 codeList1 = latestMessage.codes.joinToString(separator = "\n")
-                address1 += "（${latestMessage.codes.size}）"
+                address1 += "（${latestMessage.num}）"
             } else {
                 codeList1 = ""
             }
@@ -84,7 +87,7 @@ class ParcelWidget : AppWidgetProvider() {
             var codeList2 = ""
             if (secondMessage != null) {
                 codeList2 = secondMessage.codes.joinToString(separator = "\n")
-                address2 += "（${secondMessage.codes.size}）"
+                address2 += "（${secondMessage.num}）"
             } else {
                 codeList2 = ""
             }
@@ -94,7 +97,7 @@ class ParcelWidget : AppWidgetProvider() {
             var codeList3 = ""
             if (thirdMessage != null) {
                 codeList3 = thirdMessage.codes.joinToString(separator = "\n")
-                address3 += "（${thirdMessage.codes.size}）"
+                address3 += "（${thirdMessage.num}）"
             } else {
                 codeList3 = ""
             }

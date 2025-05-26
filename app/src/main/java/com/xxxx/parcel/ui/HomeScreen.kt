@@ -224,7 +224,7 @@ fun List(viewModel: ParcelViewModel) {
                         .padding(horizontal = 8.dp),
                 ) {
                     Text(
-                        text = result.address + "（${result.codes.size}）",
+                        text = result.address + "（${result.num}）",
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
