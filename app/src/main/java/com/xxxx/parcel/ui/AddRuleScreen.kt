@@ -32,7 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.xxxx.parcel.util.addCustomPatterns
+import com.xxxx.parcel.util.addCustomList
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,8 +136,8 @@ fun AddRuleScreen(
                             enabled = addressPattern.isNotEmpty() && codePattern.isNotEmpty()&&message.contains(addressPattern)&&message.contains(codePattern),
                             onClick = {
                                 if (addressPattern.isNotEmpty() && codePattern.isNotEmpty()) {
-                                    addCustomPatterns(context, "address", addressPattern)
-                                    addCustomPatterns(
+                                    addCustomList(context, "address", addressPattern)
+                                    addCustomList(
                                         context,
                                         "code",
                                         message.replace(codePattern, """([\s\S]{4,})""")

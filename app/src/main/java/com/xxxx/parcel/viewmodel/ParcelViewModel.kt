@@ -3,6 +3,7 @@ package com.xxxx.parcel.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.util.copy
 import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
@@ -10,6 +11,7 @@ import com.xxxx.parcel.util.SmsParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDateTime
@@ -19,6 +21,9 @@ import java.time.temporal.ChronoUnit
 class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewModel() {
     // 所有短信列表
     private val _allMessages = MutableStateFlow<List<SmsModel>>(emptyList())
+
+    // 所有已取件id列表
+    private val _allCompletedIds = MutableStateFlow<List<String>>(emptyList())
 
     // 解析成功的短信
     private val _successSmsData = MutableStateFlow<List<SmsData>>(emptyList())
@@ -30,7 +35,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
 
     // 同一地址的取件码列表
     private val _parcelsData = MutableStateFlow<List<ParcelData>>(emptyList())
-    val parcelsData: StateFlow<List<ParcelData>> = _parcelsData
+    val parcelsData: StateFlow<List<ParcelData>> = _parcelsData.asStateFlow()
 
     // 时间过滤器
     private val _timeFilterIndex = MutableStateFlow(0)
@@ -39,6 +44,24 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
     fun setTimeFilterIndex(i: Int) {
         _timeFilterIndex.value = i
         handleReceivedSms()
+    }
+
+    fun setAllCompletedIds(list: List<String>) {
+        _allCompletedIds.value = list
+    }
+
+    fun addCompletedIds(list: List<String>) {
+        val data = _allCompletedIds.value.toMutableList()
+        data.addAll(list)
+        _allCompletedIds.value = data
+        calculateNumAndIsCompleted()
+    }
+
+    fun removeCompletedId(id: String) {
+        val data = _allCompletedIds.value.toMutableList()
+        data.remove(id)
+        _allCompletedIds.value = data
+        calculateNumAndIsCompleted()
     }
 
     fun clearData() {
@@ -100,13 +123,13 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                         currentSuccessful.add(SmsData(result.address, result.code, sms, sms.id))
                         // 把同一地址的取件码添加到 parcels 列表中
                         currentParcels.find { it.address == result.address }?.let {
-                            it.codes.add(result.code)
-                            it.codes.sort()
+                            it.smsDataList.add(SmsData(result.address, result.code, sms, sms.id))
+                            it.smsDataList.sortBy { x -> x.code }
                         } ?: run {
                             currentParcels.add(
                                 ParcelData(
                                     result.address,
-                                    mutableListOf(result.code)
+                                    mutableListOf(SmsData(result.address, result.code, sms, sms.id))
                                 )
                             )
                         }
@@ -115,23 +138,33 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                         Log.e("解析", "addr:${result.address} code:${result.code} ")
                         currentFailed.add(sms)
                     }
-                    //计算包裹数量
-                    currentParcels.forEach{
-                        it.num=0
-                        it.codes.forEach{x->
-                           it.num+= x.split(", ").size
-                        }
-                    }
-
-                    currentParcels.sortBy { -it.num }
                     _successSmsData.emit(currentSuccessful)
                     _parcelsData.emit(currentParcels)
                     _failedMessages.emit(currentFailed)
 
+                    calculateNumAndIsCompleted()
                 }
 
 
             }
+        }
+    }
+
+    //计算包裹数量, 判断是否已取件
+    private fun calculateNumAndIsCompleted() {
+
+        _parcelsData.value.let { currentList ->
+            val newList = currentList.map { parcels ->
+                parcels.copy().apply {
+                    num = smsDataList.sumOf { smsData ->
+                        val isCompleted = _allCompletedIds.value.contains(smsData.id) ?: false
+                        smsData.isCompleted = isCompleted
+                        if (!isCompleted) smsData.code.split(", ").size else 0
+                    }
+                }
+            }.sortedByDescending { it.num }
+
+            _parcelsData.value = newList
         }
     }
 

@@ -28,7 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.util.clearAllCustomPatternsa
-import com.xxxx.parcel.util.getCustomPatterns
+import com.xxxx.parcel.util.getCustomList
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -40,8 +40,8 @@ fun RulesScreen(
     navController: NavController,
     onCallback: () -> Unit
 ) {
-    val listAddr = getCustomPatterns(context, "address").toMutableList()
-    val listCode = getCustomPatterns(context, "code").toMutableList()
+    val listAddr = getCustomList(context, "address").toMutableList()
+    val listCode = getCustomList(context, "code").toMutableList()
     Scaffold(
         topBar = {
             TopAppBar(

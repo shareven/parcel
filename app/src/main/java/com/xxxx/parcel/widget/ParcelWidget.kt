@@ -75,30 +75,33 @@ class ParcelWidget : AppWidgetProvider() {
             val latestMessage = viewModel?.parcelsData?.value?.firstOrNull()
             var address1 = latestMessage?.address ?: ""
             var codeList1 = ""
-            if (latestMessage != null) {
-                codeList1 = latestMessage.codes.joinToString(separator = "\n")
+            if (latestMessage != null&&latestMessage.num>0) {
+                codeList1 = latestMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
                 address1 += "（${latestMessage.num}）"
             } else {
+                address1 = ""
                 codeList1 = ""
             }
 
             val secondMessage = viewModel?.parcelsData?.value?.getOrNull(1)
             var address2 = secondMessage?.address ?: ""
             var codeList2 = ""
-            if (secondMessage != null) {
-                codeList2 = secondMessage.codes.joinToString(separator = "\n")
+            if (secondMessage != null&&secondMessage.num>0) {
+                codeList2 = secondMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
                 address2 += "（${secondMessage.num}）"
             } else {
+                address2 = ""
                 codeList2 = ""
             }
              
             val thirdMessage = viewModel?.parcelsData?.value?.getOrNull(2)
             var address3 = thirdMessage?.address ?: ""
             var codeList3 = ""
-            if (thirdMessage != null) {
-                codeList3 = thirdMessage.codes.joinToString(separator = "\n")
+            if (thirdMessage != null&&thirdMessage.num>0) {
+                codeList3 = thirdMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
                 address3 += "（${thirdMessage.num}）"
             } else {
+                address3 = ""
                 codeList3 = ""
             }
 
