@@ -17,6 +17,8 @@
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
 
+![GitHub All Releases](https://img.shields.io/github/downloads/shareven/parcel/total)
+
 # app展示
 
 
