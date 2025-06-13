@@ -94,8 +94,7 @@ fun AddRuleScreen(
                         Text(
                             text = message,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
+                                .fillMaxWidth(),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -140,13 +139,13 @@ fun AddRuleScreen(
                                     addCustomList(
                                         context,
                                         "code",
-                                        message.replace(codePattern, """([\s\S]{4,})""")
+                                        message.replace(codePattern, """([\s\S]{2,})""")
                                     )
                                     viewModel.addCustomAddressPattern(addressPattern)
                                     viewModel.addCustomCodePattern(
                                         message.replace(
                                             codePattern,
-                                            """([\s\S]{4,})"""
+                                            """([\s\S]{2,})"""
                                         )
                                     )
                                     addressPattern = ""

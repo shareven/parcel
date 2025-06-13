@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import java.net.URLEncoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,7 +97,10 @@ fun SuccessSmsScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = {navController.navigate("add_rule?message=${data.sms.body}") }
+                            onClick = {
+                                val encodedMsg = URLEncoder.encode(data.sms.body, "UTF-8")
+                                navController.navigate("add_rule?message=${encodedMsg}") 
+                            }
                         ) {
                             Text(text = "添加解析规则")
                         }

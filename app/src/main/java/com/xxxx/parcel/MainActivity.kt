@@ -40,6 +40,7 @@ import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
+import java.net.URLDecoder
 
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -216,7 +217,7 @@ fun App(
                         context,
                         viewModel,
                         navController,
-                        message,
+                        URLDecoder.decode(message, "UTF-8"),
                         onCallback = { readAndParseSms() })
                 }
                 composable("rules") {

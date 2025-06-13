@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import java.net.URLEncoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,7 +84,10 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController) {
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = {navController.navigate("add_rule?message=${message.body}") }
+                            onClick = {
+                                val encodedMsg = URLEncoder.encode(message.body, "UTF-8")
+                                navController.navigate("add_rule?message=${encodedMsg}") 
+                            }
                         ) {
                             Text(text = "添加解析规则")
                         }
