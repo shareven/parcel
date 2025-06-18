@@ -45,11 +45,12 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/parcel_widget_info" />
         </receiver>
+        
         <!-- 小部件服务 -->
-        <service
-            android:name=".ParcelRemoteViewsService"
-            android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
+<!--        <service-->
+<!--            android:name=".ParcelRemoteViewsService"-->
+<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+<!--            android:exported="false" />-->
             
         <activity
             android:name=".MainActivity"
