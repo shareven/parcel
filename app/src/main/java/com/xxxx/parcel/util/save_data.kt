@@ -2,7 +2,11 @@ package com.xxxx.parcel.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 
 
 // 保存时间index
@@ -88,4 +92,38 @@ fun clearAllCustomPatternsa(context: Context, viewModel: ParcelViewModel) {
     // 异步提交更改
     editor.apply()
     viewModel.clearAllCustomPatterns()
+}
+
+// 保存自定义短信
+fun addCustomSms(context: Context, sms: SmsModel) {
+    val customSmsList = getCustomSmsList(context).toMutableList()
+    customSmsList.add(sms)
+    saveCustomSmsList(context, customSmsList)
+}
+
+// 获取自定义短信列表
+fun getCustomSmsList(context: Context): List<SmsModel> {
+    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val jsonString = sharedPreferences.getString("custom_sms_list", "[]") ?: "[]"
+    return try {
+        Json.decodeFromString<List<SmsModel>>(jsonString)
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
+
+// 删除自定义短信
+fun removeCustomSms(context: Context, smsId: String) {
+    val customSmsList = getCustomSmsList(context).toMutableList()
+    customSmsList.removeAll { it.id == smsId }
+    saveCustomSmsList(context, customSmsList)
+}
+
+// 保存自定义短信列表
+private fun saveCustomSmsList(context: Context, smsList: List<SmsModel>) {
+    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val editor = sharedPreferences.edit()
+    val jsonString = Json.encodeToString(smsList)
+    editor.putString("custom_sms_list", jsonString)
+    editor.apply()
 }

@@ -71,8 +71,13 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
     }
 
     fun getAllMessage(list: List<SmsModel>) {
-
         _allMessages.value = list
+        handleReceivedSms()
+    }
+    
+    fun getAllMessageWithCustom(list: List<SmsModel>, customSmsList: List<SmsModel>) {
+        val combinedList = list + customSmsList
+        _allMessages.value = combinedList
         handleReceivedSms()
     }
 
@@ -138,6 +143,8 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                         Log.e("解析", "addr:${result.address} code:${result.code} ")
                         currentFailed.add(sms)
                     }
+                    // 按时间降序排序
+                    currentSuccessful.sortByDescending { it.sms.timestamp }
                     _successSmsData.emit(currentSuccessful)
                     _parcelsData.emit(currentParcels)
                     _failedMessages.emit(currentFailed)

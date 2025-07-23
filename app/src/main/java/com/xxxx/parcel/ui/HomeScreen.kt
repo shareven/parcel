@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
@@ -157,7 +158,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (hasPermission) List(context,viewModel) else
+            if (hasPermission) List(context, viewModel, navController) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -208,7 +209,7 @@ fun HomeScreen(
 
 
 @Composable
-fun List(context: Context,viewModel: ParcelViewModel) {
+fun List(context: Context, viewModel: ParcelViewModel, navController: NavController) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     if (parcelsData.isEmpty()) Column(
         modifier = Modifier.fillMaxSize(),
@@ -241,13 +242,34 @@ fun List(context: Context,viewModel: ParcelViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth().padding( vertical = 8.dp)
                     ) {
-                        Text(
-                            text = "${result.address}（${result.num}）",
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f).padding(end = 8.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // 添加+按钮
+                            IconButton(
+                                modifier = Modifier.size(32.dp),
+                                onClick = {
+                                    navController.navigate("add_custom_sms/${result.address}")
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Add,
+                                    contentDescription = "添加自定义取件码",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            Text(
+                                text = "${result.address}（${result.num}）",
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
                         IconButton(
                             modifier = Modifier.size(36.dp),

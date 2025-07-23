@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.xxxx.parcel.ui.AboutScreen
+import com.xxxx.parcel.ui.AddCustomSmsScreen
 import com.xxxx.parcel.ui.AddRuleScreen
 import com.xxxx.parcel.ui.FailSmsScreen
 import com.xxxx.parcel.ui.HomeScreen
@@ -38,6 +39,7 @@ import com.xxxx.parcel.util.PermissionUtil.showMiuiPermissionExplanationDialog
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
+import com.xxxx.parcel.util.getCustomSmsList
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
 import java.net.URLDecoder
@@ -91,8 +93,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     fun readAndParseSms() {
         val context = applicationContext
         val smsList = SmsUtil.readAllSms(context)
+        val customSmsList = getCustomSmsList(context)
 
-        viewModel.getAllMessage(smsList)
+        viewModel.getAllMessageWithCustom(smsList, customSmsList)
 
         // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
         ParcelWidget.updateAppWidget(
@@ -204,6 +207,24 @@ fun App(
                         onCallBack = { guideToSettings() })
                 }
                 composable(
+                    route = "add_custom_sms/{address}",
+                    arguments = listOf(
+                        navArgument("address") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        }
+                    )
+                ) { backStackEntry ->
+                    val address = backStackEntry.arguments?.getString("address") ?: ""
+                    AddCustomSmsScreen(
+                        context,
+                        viewModel,
+                        navController,
+                        URLDecoder.decode(address, "UTF-8"),
+                        onCallback = { readAndParseSms() }
+                    )
+                }
+                composable(
                     route = "add_rule?message={message}",
                     arguments = listOf(
                         navArgument("message") {
@@ -231,7 +252,7 @@ fun App(
                     FailSmsScreen(viewModel, navController)
                 }
                 composable("success_sms") {
-                    SuccessSmsScreen(viewModel, navController)
+                    SuccessSmsScreen(viewModel, navController, readAndParseSms)
                 }
                 composable("about") {
                     AboutScreen(navController)
