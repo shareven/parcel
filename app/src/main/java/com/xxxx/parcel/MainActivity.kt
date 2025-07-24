@@ -42,6 +42,7 @@ import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.util.getCustomSmsList
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
+import com.xxxx.parcel.widget.ParcelWidgetLarge
 import java.net.URLDecoder
 
 
@@ -99,6 +100,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
         ParcelWidget.updateAppWidget(
+            context,
+            AppWidgetManager.getInstance(context),
+            null,
+            viewModel
+        )
+        ParcelWidgetLarge.updateAppWidget(
             context,
             AppWidgetManager.getInstance(context),
             null,

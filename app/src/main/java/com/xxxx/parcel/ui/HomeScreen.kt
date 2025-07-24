@@ -59,6 +59,7 @@ import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
+import com.xxxx.parcel.widget.ParcelWidgetLarge
 import kotlinx.coroutines.launch
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -193,6 +194,12 @@ fun HomeScreen(
                                     null,
                                     viewModel
                                 )
+                                ParcelWidgetLarge.updateAppWidget(
+                                    context,
+                                    AppWidgetManager.getInstance(context),
+                                    null,
+                                    viewModel
+                                )
                                 scope.launch { sheetState.hide() }.invokeOnCompletion {
                                     if (!sheetState.isVisible) {
                                         showBottomSheet = false
@@ -285,6 +292,12 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
                                         null,
                                         viewModel
                                     )
+                                    ParcelWidgetLarge.updateAppWidget(
+                                        context,
+                                        AppWidgetManager.getInstance(context),
+                                        null,
+                                        viewModel
+                                    )
                                 }
                             },
                             enabled = result.num > 0
@@ -321,6 +334,12 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
 
                                             // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
                                             ParcelWidget.updateAppWidget(
+                                                context,
+                                                AppWidgetManager.getInstance(context),
+                                                null,
+                                                viewModel
+                                            )
+                                            ParcelWidgetLarge.updateAppWidget(
                                                 context,
                                                 AppWidgetManager.getInstance(context),
                                                 null,
