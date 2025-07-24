@@ -77,47 +77,54 @@ class ParcelWidgetLarge : AppWidgetProvider() {
             var codeList1 = ""
             if (latestMessage != null&&latestMessage.num>0) {
                 codeList1 = latestMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
+                address1 += "（${latestMessage.num}）"
+            } else {
+                address1 = ""
+                codeList1 = ""
             }
 
-            val latestMessage2 = if (viewModel?.parcelsData?.value?.size!! >= 2) viewModel.parcelsData.value!![1] else null
-            var address2 = latestMessage2?.address ?: ""
+            val secondMessage = viewModel?.parcelsData?.value?.getOrNull(1)
+            var address2 = secondMessage?.address ?: ""
             var codeList2 = ""
-            if (latestMessage2 != null&&latestMessage2.num>0) {
-                codeList2 = latestMessage2.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
+            if (secondMessage != null&&secondMessage.num>0) {
+                codeList2 = secondMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
+                address2 += "（${secondMessage.num}）"
+            } else {
+                address2 = ""
+                codeList2 = ""
             }
-
-            val latestMessage3 = if (viewModel?.parcelsData?.value?.size!! >= 3) viewModel.parcelsData.value!![2] else null
-            var address3 = latestMessage3?.address ?: ""
+             
+            val thirdMessage = viewModel?.parcelsData?.value?.getOrNull(2)
+            var address3 = thirdMessage?.address ?: ""
             var codeList3 = ""
-            if (latestMessage3 != null&&latestMessage3.num>0) {
-                codeList3 = latestMessage3.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
+            if (thirdMessage != null&&thirdMessage.num>0) {
+                codeList3 = thirdMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
+                address3 += "（${thirdMessage.num}）"
+            } else {
+                address3 = ""
+                codeList3 = ""
             }
 
-            // 构建 RemoteViews
-            val views = RemoteViews(context.packageName, R.layout.widget_layout)
 
-            // 设置取件数量
-            views.setTextViewText(R.id.parcel_num, total.toString())
+            // 构建 RemoteViews 对象
+            val views = RemoteViews(context.packageName, R.layout.widget_layout).apply {
+                setTextViewText(R.id.parcel_num, total.toString() )
+                setTextViewText(R.id.widget_address1, address1 )
+                setTextViewText(R.id.widget_codes1, codeList1)
 
-            // 设置地址和取件码
-            views.setTextViewText(R.id.widget_address1, address1)
-            views.setTextViewText(R.id.widget_codes1, codeList1)
+                setTextViewText(R.id.widget_address2, address2 )
+                setTextViewText(R.id.widget_codes2, codeList2)
+                setTextViewText(R.id.widget_address3, address3 )
+                setTextViewText(R.id.widget_codes3, codeList3)
 
-            views.setTextViewText(R.id.widget_address2, address2)
-            views.setTextViewText(R.id.widget_codes2, codeList2)
+                // 设置点击意图
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                }
+                setOnClickPendingIntent(R.id.widget_container, PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            }
 
-            views.setTextViewText(R.id.widget_address3, address3)
-            views.setTextViewText(R.id.widget_codes3, codeList3)
-
-            // 设置点击事件
-            val intent = Intent(context, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                context, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-            // 通知 AppWidgetManager 执行更新
+            // 更新 App Widget
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
