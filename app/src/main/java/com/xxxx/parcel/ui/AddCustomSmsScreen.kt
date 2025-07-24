@@ -52,6 +52,7 @@ fun AddCustomSmsScreen(
     onCallback: () -> Unit
 ) {
     var pickupCode by remember { mutableStateOf("") }
+    var addressSet by remember { mutableStateOf(address) }
     var generatedSmsContent by remember { mutableStateOf("") }
     var isPickupCodeValid by remember { mutableStateOf(true) }
     var validationMessage by remember { mutableStateOf("") }
@@ -85,9 +86,9 @@ fun AddCustomSmsScreen(
     }
 
     // 根据取件码自动生成短信内容
-    LaunchedEffect(pickupCode, address) {
+    LaunchedEffect(pickupCode, addressSet) {
         if (pickupCode.isNotEmpty()) {
-            generatedSmsContent = "【自定义取件短信】取件码${pickupCode}，包裹已到${address}"
+            generatedSmsContent = "【自定义取件短信】取件码${pickupCode}，包裹已到${addressSet}"
         } else {
             generatedSmsContent = ""
         }
@@ -124,19 +125,30 @@ fun AddCustomSmsScreen(
                         .padding(16.dp),
                 ) {
                     // 显示地址信息
-                    Text(
-                        text = "取件地址：",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    SelectionContainer {
+                    Column {
                         Text(
-                            text = address,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            style = MaterialTheme.typography.bodyLarge
+                            text = "取件地址：",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        OutlinedTextField(
+                            value = addressSet,
+                            onValueChange = { addressSet = it },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
+                    // Text(
+                    //     text = "取件地址：",
+                    //     style = MaterialTheme.typography.bodyMedium
+                    // )
+                    // SelectionContainer {
+                    //     Text(
+                    //         text = addressSet,
+                    //         modifier = Modifier
+                    //             .fillMaxWidth()
+                    //             .padding(vertical = 8.dp),
+                    //         style = MaterialTheme.typography.bodyLarge
+                    //     )
+                    // }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -195,7 +207,7 @@ fun AddCustomSmsScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Button(
-                            enabled = pickupCode.isNotEmpty() && isPickupCodeValid,
+                            enabled = pickupCode.isNotEmpty() && isPickupCodeValid && addressSet.isNotEmpty(),
                             onClick = {
                                 if (pickupCode.isNotEmpty() && isPickupCodeValid) {
                                      val currentTime = System.currentTimeMillis()
