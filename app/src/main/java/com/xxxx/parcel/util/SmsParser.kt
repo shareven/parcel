@@ -13,7 +13,7 @@ class SmsParser {
     )
 
     // 动态规则存储
-    private val customAddressPatterns = mutableListOf<Pattern>()
+    private val customAddressPatterns = mutableListOf<String>()
     private val customCodePatterns = mutableListOf<Pattern>()
 
 
@@ -22,10 +22,11 @@ class SmsParser {
     fun parseSms(sms: String): ParseResult {
         var foundAddress = ""
         var foundCode = ""
+        
+        // 使用字符串匹配查找地址
         for (pattern in customAddressPatterns) {
-            val matcher = pattern.matcher(sms)
-            if (matcher.find()) {
-                foundAddress = matcher.group(0)?.toString() ?: ""
+            if (sms.contains(pattern, ignoreCase = true)) {
+                foundAddress = pattern
                 break
             }
         }
@@ -68,8 +69,7 @@ class SmsParser {
     // 添加自定义解析规则
 
     fun addCustomAddressPattern(pattern: String) {
-
-        customAddressPatterns.add(Pattern.compile(pattern))
+        customAddressPatterns.add(pattern)
     }
 
     fun addCustomCodePattern(pattern: String) {

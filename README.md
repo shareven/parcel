@@ -6,13 +6,13 @@
 
 您可以添加自定义规则来改进解析效果。
 
-桌面卡片添加：一般是藏在插件或者安卓小组件里面
+桌面卡片添加：一般是藏在全部卡片-最底部的插件或者安卓小组件里面
 
 欢迎下载和使用！有问题或建议请提issue。
 
 # 下载 | Download  
 
-最新版本：v1.0.15
+最新版本：v1.0.17
 
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
