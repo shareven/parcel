@@ -43,7 +43,6 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
 
     fun setTimeFilterIndex(i: Int) {
         _timeFilterIndex.value = i
-        handleReceivedSms()
     }
 
     fun setAllCompletedIds(list: List<String>) {
@@ -93,35 +92,6 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
 
                 val result = smsParser.parseSms(sms.body)
 
-
-                val currentTime = System.currentTimeMillis()
-                val messageTime = sms.timestamp
-
-                var includeMessage = true
-
-                if (_timeFilterIndex.value == 0) {
-                    // 不进行时间过滤
-                    includeMessage = true
-                } else {
-                    // 获取当前时间和消息时间的日期部分
-                    val currentLocalTime = LocalDateTime.ofInstant(
-                        Instant.ofEpochMilli(currentTime),
-                        ZoneId.systemDefault()
-                    ).toLocalDate()
-                    val messageLocalTime = LocalDateTime.ofInstant(
-                        Instant.ofEpochMilli(messageTime),
-                        ZoneId.systemDefault()
-                    ).toLocalDate()
-
-                    // 计算两个日期之间的天数差
-                    val daysDifference =
-                        ChronoUnit.DAYS.between(messageLocalTime, currentLocalTime)
-
-                    // 根据选择的时间范围判断是否包含该消息
-                    includeMessage = daysDifference < _timeFilterIndex.value
-                }
-
-                if (includeMessage) {
                     if (result.success) {
                         Log.d("成功短信", sms.body)
                         Log.d("解析", "addr:${result.address} code:${result.code} ")
@@ -151,9 +121,6 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                     _failedMessages.emit(currentFailed)
 
                     calculateNumAndIsCompleted()
-                }
-
-
             }
         }
     }

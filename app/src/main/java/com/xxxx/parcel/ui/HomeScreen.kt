@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.util.PermissionUtil
 import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
@@ -179,34 +180,23 @@ fun HomeScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 timeFilterOptions.forEachIndexed { index, option ->
                     Text(
-                        text = option,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .clickable {
-                                saveIndex(context, index)
-                                viewModel.setTimeFilterIndex(index)
-                                // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
-                                ParcelWidget.updateAppWidget(
-                                    context,
-                                    AppWidgetManager.getInstance(context),
-                                    null,
-                                    viewModel
-                                )
-                                ParcelWidgetLarge.updateAppWidget(
-                                    context,
-                                    AppWidgetManager.getInstance(context),
-                                    null,
-                                    viewModel
-                                )
-                                scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                    if (!sheetState.isVisible) {
-                                        showBottomSheet = false
+                                text = option,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .clickable {
+                                        saveIndex(context, index)
+                                        viewModel.setTimeFilterIndex(index)
+                                        // 重新根据过滤时间读取短信
+                                        (context as MainActivity).readAndParseSms()
+                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                            if (!sheetState.isVisible) {
+                                                showBottomSheet = false
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                    )
+                            )
                 }
             }
         }

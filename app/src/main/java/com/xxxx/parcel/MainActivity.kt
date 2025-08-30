@@ -93,7 +93,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     fun readAndParseSms() {
         val context = applicationContext
-        val smsList = SmsUtil.readAllSms(context)
+        val daysFilter = viewModel.timeFilterIndex.value
+        val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
         val customSmsList = getCustomSmsList(context)
 
         viewModel.getAllMessageWithCustom(smsList, customSmsList)
@@ -111,8 +112,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             null,
             viewModel
         )
-
-
     }
 
     private fun init() {
