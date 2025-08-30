@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -55,6 +56,8 @@ fun AddCustomSmsScreen(
     var addressSet by remember { mutableStateOf(address) }
     var generatedSmsContent by remember { mutableStateOf("") }
     var isPickupCodeValid by remember { mutableStateOf(true) }
+    var isSms by remember { mutableStateOf(false) }
+    var sms by remember { mutableStateOf("") }
     var validationMessage by remember { mutableStateOf("") }
 
     // 取件码校验正则表达式
@@ -65,8 +68,12 @@ fun AddCustomSmsScreen(
         return if (code.isEmpty()) {
             validationMessage = "取件码不能为空"
             false
+        } else if (code.length < 2) {
+            validationMessage = "最小长度为2"
+            false
         } else if (!pickupCodePattern.matcher(code).matches()) {
             validationMessage = "取件码格式不正确，应包含字母、数字、空格或短横线，长度至少2位"
+
             false
         } else {
             validationMessage = ""
@@ -74,20 +81,46 @@ fun AddCustomSmsScreen(
         }
     }
 
-    // 自动粘贴剪贴板内容到取件码输入框
-    LaunchedEffect(Unit) {
-        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clipData = clipboardManager.primaryClip
-        if (clipData != null && clipData.itemCount > 0) {
-            val clipText = clipData.getItemAt(0).text?.toString() ?: ""
-            pickupCode = clipText
-            isPickupCodeValid = validatePickupCode(clipText)
+    // 校验是否为短信
+    fun validateIsSms(code: String): Boolean {
+        return if (code.isEmpty()) {
+            false
+        } else if (code.length < 2) {
+            false
+        } else if (pickupCodePattern.matcher(code).matches()) {
+            false
+        } else {
+            true
         }
     }
 
-    // 根据取件码自动生成短信内容
-    LaunchedEffect(pickupCode, addressSet) {
-        if (pickupCode.isNotEmpty()) {
+
+    // 自动粘贴剪贴板内容到取件码输入框
+    LaunchedEffect(Unit) {
+        val clipboardManager =
+            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipData = clipboardManager.primaryClip
+        if (clipData != null && clipData.itemCount > 0) {
+            val clipText = clipData.getItemAt(0).text?.toString() ?: ""
+
+            isSms = validateIsSms(clipText)
+            if (isSms) {
+                sms = clipText
+            } else {
+                pickupCode = clipText
+            }
+        }
+    }
+
+    // 根据取件码或短信自动生成自定义短信内容
+    LaunchedEffect(pickupCode, addressSet, sms, isSms) {
+        if (isSms) {
+            if (sms.isNotEmpty()) {
+                generatedSmsContent = "【自定义取件短信】${sms}"
+            } else {
+                generatedSmsContent = ""
+            }
+        } else if (addressSet.isNotEmpty() && pickupCode.isNotEmpty()) {
             generatedSmsContent = "【自定义取件短信】取件码${pickupCode}，包裹已到${addressSet}"
         } else {
             generatedSmsContent = ""
@@ -116,6 +149,10 @@ fun AddCustomSmsScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(
+                text = "自动识别复制内容是取件码还是短信",
+                style = MaterialTheme.typography.bodyMedium
+            )
             Card(
                 modifier = Modifier
                     .padding(8.dp)
@@ -124,62 +161,88 @@ fun AddCustomSmsScreen(
                     modifier = Modifier
                         .padding(16.dp),
                 ) {
-                    // 显示地址信息
-                    Column {
-                        Text(
-                            text = "取件地址：",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        OutlinedTextField(
-                            value = addressSet,
-                            onValueChange = { addressSet = it },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    // Text(
-                    //     text = "取件地址：",
-                    //     style = MaterialTheme.typography.bodyMedium
-                    // )
-                    // SelectionContainer {
-                    //     Text(
-                    //         text = addressSet,
-                    //         modifier = Modifier
-                    //             .fillMaxWidth()
-                    //             .padding(vertical = 8.dp),
-                    //         style = MaterialTheme.typography.bodyLarge
-                    //     )
-                    // }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    if (isSms) {
 
-                    // 取件码输入框
-                    Column {
-                        Text(
-                            text = "取件码（可自动粘贴取件码）",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        OutlinedTextField(
-                            value = pickupCode,
-                            onValueChange = { 
-                                pickupCode = it
-                                isPickupCodeValid = validatePickupCode(it)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("请输入取件码") },
-                            isError = !isPickupCodeValid,
-                            supportingText = {
-                                if (!isPickupCodeValid && validationMessage.isNotEmpty()) {
-                                    Text(
-                                        text = validationMessage,
-                                        color = MaterialTheme.colorScheme.error
+                        Column(
+                            modifier = Modifier
+                                .padding(16.dp),
+                        ) {
+
+
+                            // 取件码输入框
+                            Column {
+                                Text(
+                                    text = "短信（可自动粘贴短信）",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                OutlinedTextField(
+                                    value = sms,
+                                    onValueChange = {
+                                        sms = it
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text("请输入短信") },
+
                                     )
-                                }
                             }
-                        )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+
+                        }
+                    } else {
+
+                        Column(
+                            modifier = Modifier
+                                .padding(16.dp),
+                        ) {
+                            // 显示地址信息
+                            Column {
+                                Text(
+                                    text = "取件地址：",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                OutlinedTextField(
+                                    value = addressSet,
+                                    onValueChange = { addressSet = it },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // 取件码输入框
+                            Column {
+                                Text(
+                                    text = "取件码（可自动粘贴取件码）",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                OutlinedTextField(
+                                    value = pickupCode,
+                                    onValueChange = {
+                                        pickupCode = it
+                                        isPickupCodeValid = validatePickupCode(it)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text("请输入取件码") },
+                                    isError = !isPickupCodeValid,
+                                    supportingText = {
+                                        if (!isPickupCodeValid && validationMessage.isNotEmpty()) {
+                                            Text(
+                                                text = validationMessage,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     // 显示自动生成的短信内容
                     if (generatedSmsContent.isNotEmpty()) {
                         Column {
@@ -193,38 +256,45 @@ fun AddCustomSmsScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp),
-                                        color = Color(0xFF25AF22),
+                                    color = Color(0xFF25AF22),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
                     }
+                }
+            }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Button(
-                            enabled = pickupCode.isNotEmpty() && isPickupCodeValid && addressSet.isNotEmpty(),
-                            onClick = {
-                                if (pickupCode.isNotEmpty() && isPickupCodeValid) {
-                                     val currentTime = System.currentTimeMillis()
-                                     val smsModel = SmsModel(
-                                         id = currentTime.toString(),
-                                         body = generatedSmsContent,
-                                         timestamp = currentTime
-                                     )
-                                    addCustomSms(context, smsModel)
-                                    onCallback()
-                                    navController.navigate("home")
-                                }
-                            }
-                        ) {
-                            Text(text = "保存自定义短信")
-                        }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TextButton(
+                    onClick = {
+                        isSms = !isSms
                     }
+                ) {
+                    if (isSms) Text(text = "输入取件码") else Text(text = "输入短信")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    enabled = generatedSmsContent.isNotEmpty(),
+                    onClick = {
+                        val currentTime = System.currentTimeMillis()
+                        val smsModel = SmsModel(
+                            id = currentTime.toString(),
+                            body = generatedSmsContent,
+                            timestamp = currentTime
+                        )
+                        addCustomSms(context, smsModel)
+                        onCallback()
+                        navController.navigate("home")
+
+                    }
+                ) {
+                    Text(text = "点击保存")
                 }
             }
         }

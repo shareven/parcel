@@ -256,7 +256,7 @@ fun App(
                         onCallback = { readAndParseSms() })
                 }
                 composable("fail_sms") {
-                    FailSmsScreen(viewModel, navController)
+                    FailSmsScreen(viewModel, navController,readAndParseSms)
                 }
                 composable("success_sms") {
                     SuccessSmsScreen(viewModel, navController, readAndParseSms)

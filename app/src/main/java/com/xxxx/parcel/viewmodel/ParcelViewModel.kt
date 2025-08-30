@@ -145,6 +145,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                     }
                     // 按时间降序排序
                     currentSuccessful.sortByDescending { it.sms.timestamp }
+                    currentFailed.sortByDescending { it.timestamp }
                     _successSmsData.emit(currentSuccessful)
                     _parcelsData.emit(currentParcels)
                     _failedMessages.emit(currentFailed)

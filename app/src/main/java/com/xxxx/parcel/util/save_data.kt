@@ -22,7 +22,7 @@ fun saveIndex(context: Context, index: Int) {
 fun getIndex(context: Context): Int {
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-    return sharedPreferences.getInt("timeFilterIndex",0)
+    return sharedPreferences.getInt("timeFilterIndex", 0)
 }
 
 // 保存字符串列表到 SharedPreferences
@@ -51,24 +51,24 @@ fun addCustomList(context: Context, key: String, newString: String) {
     saveCustomList(context, key, existingSet)
 }
 
-fun removeCompletedId(context: Context, viewModel: ParcelViewModel,id:String){
-    val completedIds = getCustomList(context,"completedIds")
+fun removeCompletedId(context: Context, viewModel: ParcelViewModel, id: String) {
+    val completedIds = getCustomList(context, "completedIds")
     completedIds.remove(id)
-    saveCustomList(context,"completedIds",completedIds)
+    saveCustomList(context, "completedIds", completedIds)
     viewModel.removeCompletedId(id)
 }
 
-fun addCompletedIds(context: Context, viewModel: ParcelViewModel,ids:List<String>){
-    val completedIds = getCustomList(context,"completedIds")
+fun addCompletedIds(context: Context, viewModel: ParcelViewModel, ids: List<String>) {
+    val completedIds = getCustomList(context, "completedIds")
     completedIds.addAll(ids)
-    saveCustomList(context,"completedIds",completedIds)
+    saveCustomList(context, "completedIds", completedIds)
     viewModel.addCompletedIds(ids)
 }
 
 fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
     val listAddr = getCustomList(context, "address").toMutableList()
     val listCode = getCustomList(context, "code").toMutableList()
-    val completedIds = getCustomList(context,"completedIds").toMutableList()
+    val completedIds = getCustomList(context, "completedIds").toMutableList()
     val timeFilterIndex = getIndex(context)
 
     listAddr.forEach {
@@ -82,15 +82,24 @@ fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
 }
 
 
-fun clearAllCustomPatternsa(context: Context, viewModel: ParcelViewModel) {
-    // 获取 SharedPreferences 实例
-    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-    // 获取 Editor 对象
-    val editor = sharedPreferences.edit()
-   saveCustomList(context,"address",mutableSetOf())
-    saveCustomList(context,"code",mutableSetOf())
-    // 异步提交更改
-    editor.apply()
+fun clearCustomPattern(
+    context: Context,
+    key: String,
+    pattern: String,
+    viewModel: ParcelViewModel
+) {
+
+    val listPatterns = getCustomList(context, key)
+    listPatterns.remove(pattern)
+    saveCustomList(context, key, listPatterns)
+
+    viewModel.clearAllCustomPatterns()
+    getAllSaveData(context,viewModel)
+}
+
+fun clearAllCustomPatterns(context: Context, viewModel: ParcelViewModel) {
+    saveCustomList(context, "address", mutableSetOf())
+    saveCustomList(context, "code", mutableSetOf())
     viewModel.clearAllCustomPatterns()
 }
 
@@ -103,7 +112,8 @@ fun addCustomSms(context: Context, sms: SmsModel) {
 
 // 获取自定义短信列表
 fun getCustomSmsList(context: Context): List<SmsModel> {
-    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
     val jsonString = sharedPreferences.getString("custom_sms_list", "[]") ?: "[]"
     return try {
         Json.decodeFromString<List<SmsModel>>(jsonString)
@@ -121,7 +131,8 @@ fun removeCustomSms(context: Context, smsId: String) {
 
 // 保存自定义短信列表
 private fun saveCustomSmsList(context: Context, smsList: List<SmsModel>) {
-    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
     val editor = sharedPreferences.edit()
     val jsonString = Json.encodeToString(smsList)
     editor.putString("custom_sms_list", jsonString)
