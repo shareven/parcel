@@ -11,21 +11,23 @@
     <uses-permission android:name="android.permission.READ_SMS" />
 
     <!-- 添加存储权限 -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:enableOnBackInvokedCallback="true"
+        android:exported="true"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:exported="true"
         android:theme="@style/Theme.Parcel"
         tools:targetApi="31">
         <!-- <receiver
@@ -38,31 +40,64 @@
         <receiver
             android:name=".widget.ParcelWidget"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/parcel_widget_info" />
+
+            <!--            // 定义是否需要曝光刷新-->
+            <meta-data
+                android:name="miuiWidgetRefresh"
+                android:value="exposure" />
+            <!--            // 定义曝光刷新的时间间隔 时间单位为毫秒-->
+            <meta-data
+                android:name="miuiWidgetRefreshMinInterval"
+                android:value="20000" />
+            <!--            // MIUI Widget 标识-->
+            <meta-data
+                android:name="miuiWidget"
+                android:value="true" />
+            <intent-filter>
+                <!--                //系统定时刷新-->
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <!--                //MIUI展现刷新-->
+                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
         </receiver>
-        
+
         <receiver
             android:name=".widget.ParcelWidgetLarge"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/parcel_widget_large_info" />
+            <!--            // 定义是否需要曝光刷新-->
+            <meta-data
+                android:name="miuiWidgetRefresh"
+                android:value="exposure" />
+            <!--            // 定义曝光刷新的时间间隔 时间单位为毫秒-->
+            <meta-data
+                android:name="miuiWidgetRefreshMinInterval"
+                android:value="20000" />
+            <!--            // MIUI Widget 标识-->
+            <meta-data
+                android:name="miuiWidget"
+                android:value="true" />
+            <intent-filter>
+                <!--                //系统定时刷新-->
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <!--                //MIUI展现刷新-->
+                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
         </receiver>
-        
+
         <!-- 小部件服务 -->
-<!--        <service-->
-<!--            android:name=".ParcelRemoteViewsService"-->
-<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
-<!--            android:exported="false" />-->
-            
+        <!--        <service-->
+        <!--            android:name=".ParcelRemoteViewsService"-->
+        <!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+        <!--            android:exported="false" />-->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
