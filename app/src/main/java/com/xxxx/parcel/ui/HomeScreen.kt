@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -216,6 +217,8 @@ fun List(
     updateAllWidget: () -> Unit
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
+    val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
+    
     if (parcelsData.isEmpty()) Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -274,7 +277,14 @@ fun List(
                                 style = MaterialTheme.typography.bodyLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        val currentExpanded = expandedStates.value[result.address] ?: true
+                                        expandedStates.value = expandedStates.value.toMutableMap().apply {
+                                            put(result.address, !currentExpanded)
+                                        }
+                                    }
                             )
                         }
 
@@ -300,42 +310,47 @@ fun List(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    val isExpanded = expandedStates.value[result.address] ?: true
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = isExpanded,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            result.smsDataList.forEach { smsData ->
-                                Box(modifier = Modifier.padding(6.dp)) {
-                                    Text(
-                                        text = smsData.code,
-                                        textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                        color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
-                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                        modifier = Modifier
-                                            .clickable {
-                                                if (smsData.isCompleted) {
-                                                    removeCompletedId(
-                                                        context,
-                                                        viewModel,
-                                                        smsData.id
-                                                    )
-                                                } else {
-                                                    addCompletedIds(
-                                                        context,
-                                                        viewModel,
-                                                        listOf(smsData.id)
-                                                    )
-                                                }
-
-                                                updateAllWidget()
-                                            }
-                                    )
+                        Column {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    result.smsDataList.forEach { smsData ->
+                                        Box(modifier = Modifier.padding(6.dp)) {
+                                            Text(
+                                                text = smsData.code,
+                                                textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                                color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
+                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        if (smsData.isCompleted) {
+                                                            removeCompletedId(
+                                                                context,
+                                                                viewModel,
+                                                                smsData.id
+                                                            )
+                                                        } else {
+                                                            addCompletedIds(
+                                                                context,
+                                                                viewModel,
+                                                                listOf(smsData.id)
+                                                            )
+                                                        }
+                                                        updateAllWidget()
+                                                    }
+                                            )
+                                        }
+                                    }
                                 }
                             }
-
-
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
