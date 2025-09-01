@@ -55,11 +55,12 @@ fun RulesScreen(
 ) {
     var listAddr by remember { mutableStateOf(mutableListOf<String>()) }
     var listCode by remember { mutableStateOf(mutableListOf<String>()) }
-
+    var listIgnoreKeywords by remember { mutableStateOf(mutableListOf<String>()) }
 
     fun getDate() {
         listAddr = getCustomList(context, "address").toMutableList()
         listCode = getCustomList(context, "code").toMutableList()
+        listIgnoreKeywords = getCustomList(context, "ignoreKeywords").toMutableList()
     }
 
     fun onDelete(key: String, pattern: String) {
@@ -198,7 +199,50 @@ fun RulesScreen(
                     }
                 }
             }
+            item {
+                Spacer(Modifier.height(16.dp))
+            }
+            item {
+                Text(
+                    text = "不解析关键词",
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            items(listIgnoreKeywords) { keyword ->
+                Card(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = 8.dp
+                            )
+                    ) {
+                        Text(
+                            text = keyword,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
 
+                        IconButton(
+                            modifier = Modifier.size(36.dp),
+                            onClick = { onDelete("ignoreKeywords", keyword) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "删除关键词",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

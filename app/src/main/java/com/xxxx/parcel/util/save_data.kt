@@ -69,6 +69,7 @@ fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
     val listAddr = getCustomList(context, "address").toMutableList()
     val listCode = getCustomList(context, "code").toMutableList()
     val completedIds = getCustomList(context, "completedIds").toMutableList()
+    val ignoreKeywords = getCustomList(context, "ignoreKeywords").toMutableList()
     val timeFilterIndex = getIndex(context)
 
     listAddr.forEach {
@@ -76,6 +77,9 @@ fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
     }
     listCode.forEach {
         viewModel.addCustomCodePattern(it)
+    }
+    ignoreKeywords.forEach {
+        viewModel.addIgnoreKeyword(it)
     }
     viewModel.setTimeFilterIndex(timeFilterIndex)
     viewModel.setAllCompletedIds(completedIds)

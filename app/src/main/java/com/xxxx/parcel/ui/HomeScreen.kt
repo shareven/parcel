@@ -330,7 +330,6 @@ fun List(
                                                 }
 
                                                 updateAllWidget()
-
                                             }
                                     )
                                 }

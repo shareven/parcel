@@ -152,6 +152,10 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
         smsParser.addCustomCodePattern(pattern)
     }
 
+    fun addIgnoreKeyword(keyword: String) {
+        smsParser.addIgnoreKeyword(keyword)
+    }
+
     fun clearAllCustomPatterns() {
         smsParser.clearAllCustomPatterns()
     }

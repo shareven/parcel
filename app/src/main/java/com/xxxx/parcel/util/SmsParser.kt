@@ -15,6 +15,7 @@ class SmsParser {
     // 动态规则存储
     private val customAddressPatterns = mutableListOf<String>()
     private val customCodePatterns = mutableListOf<Pattern>()
+    private val ignoreKeywords = mutableListOf<String>()
 
 
     data class ParseResult(val address: String, val code: String, val success: Boolean)
@@ -22,7 +23,14 @@ class SmsParser {
     fun parseSms(sms: String): ParseResult {
         var foundAddress = ""
         var foundCode = ""
-        
+
+        // 检查是否包含忽略关键词
+        for (ignoreKeyword in ignoreKeywords) {
+            if (ignoreKeyword.isNotBlank() && sms.contains(ignoreKeyword, ignoreCase = true)) {
+                return ParseResult("", "", false)
+            }
+        }
+
         // 使用字符串匹配查找地址
         for (pattern in customAddressPatterns) {
             if (sms.contains(pattern, ignoreCase = true)) {
@@ -53,7 +61,7 @@ class SmsParser {
                 val match = codeMatcher.group(0)
                 // 进一步将匹配到的内容按分隔符拆分成单个取件码
                 val codes = match?.split(Regex("[，,、]"))
-                foundCode = codes?.joinToString(", ") { it.trim() }?:""
+                foundCode = codes?.joinToString(", ") { it.trim() } ?: ""
                 foundCode = foundCode.replace(Regex("[^A-Za-z0-9-, ]"), "")
             }
 
@@ -76,8 +84,13 @@ class SmsParser {
         customCodePatterns.add(Pattern.compile(pattern))
     }
 
+    fun addIgnoreKeyword(keyword: String) {
+        ignoreKeywords.add(keyword)
+    }
+
     fun clearAllCustomPatterns() {
         customAddressPatterns.clear()
         customCodePatterns.clear()
+        ignoreKeywords.clear()
     }
 }
