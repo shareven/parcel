@@ -2,6 +2,7 @@ package com.xxxx.parcel
 
 import android.Manifest
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -43,6 +44,8 @@ import com.xxxx.parcel.util.getCustomSmsList
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
 import com.xxxx.parcel.widget.ParcelWidgetLarge
+import com.xxxx.parcel.widget.ParcelWidgetLargeMiui
+import com.xxxx.parcel.widget.ParcelWidgetMiui
 import java.net.URLDecoder
 
 
@@ -72,7 +75,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 context,
                 viewModel,
                 guideToSettings = { guideToSettings() },
-                readAndParseSms = { readAndParseSms() })
+                readAndParseSms = { readAndParseSms() },
+                updateAllWidget = { updateAllWidget() },
+            )
         }
     }
 
@@ -91,14 +96,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         )
     }
 
-    fun readAndParseSms() {
-        val context = applicationContext
-        val daysFilter = viewModel.timeFilterIndex.value
-        val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
-        val customSmsList = getCustomSmsList(context)
-
-        viewModel.getAllMessageWithCustom(smsList, customSmsList)
-
+    fun updateAllWidget() {
         // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
         ParcelWidget.updateAppWidget(
             context,
@@ -112,7 +110,31 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             null,
             viewModel
         )
+        ParcelWidgetMiui.updateAppWidget(
+            context,
+            AppWidgetManager.getInstance(context),
+            null,
+            viewModel
+        )
+        ParcelWidgetLargeMiui.updateAppWidget(
+            context,
+            AppWidgetManager.getInstance(context),
+            null,
+            viewModel
+        )
     }
+
+    fun readAndParseSms() {
+        val context = applicationContext
+        val daysFilter = viewModel.timeFilterIndex.value
+        val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
+        val customSmsList = getCustomSmsList(context)
+
+        viewModel.getAllMessageWithCustom(smsList, customSmsList)
+
+        updateAllWidget()
+    }
+
 
     private fun init() {
 
@@ -128,6 +150,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             )
             if (PermissionUtil.isMIUI()) {
                 //小米手机 显示引导弹窗后调用 requestMiuiSmsPermission()
+                val component = ComponentName(context, ParcelWidgetMiui::class.java)
+                context.packageManager.setComponentEnabledSetting(
+                    component,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+                val componentLarge = ComponentName(context, ParcelWidgetLargeMiui::class.java)
+                context.packageManager.setComponentEnabledSetting(
+                    componentLarge,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
                 showMiuiPermissionExplanationDialog(context)
             }
             if (PermissionUtil.hasSmsPermissions(this)) {
@@ -145,7 +179,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 context,
                 viewModel,
                 guideToSettings = { guideToSettings() },
-                readAndParseSms = { readAndParseSms() })
+                readAndParseSms = { readAndParseSms() },
+                updateAllWidget = { updateAllWidget() },
+            )
         }
     }
 
@@ -157,18 +193,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-            if (grantResults.isNotEmpty() &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED
-            ) {
-                init()
+        if (grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            init()
 
+        } else {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
+                init()
             } else {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
-                    init()
-                } else {
-                    guideToSettings()
-                }
+                guideToSettings()
             }
+        }
 
     }
 
@@ -193,7 +229,8 @@ fun App(
     context: Context,
     viewModel: ParcelViewModel,
     guideToSettings: () -> Unit,
-    readAndParseSms: () -> Unit
+    readAndParseSms: () -> Unit,
+    updateAllWidget: () -> Unit,
 ) {
     ParcelTheme {
         val navController = rememberNavController()
@@ -210,7 +247,9 @@ fun App(
                         context,
                         viewModel,
                         navController,
-                        onCallBack = { guideToSettings() })
+                        onCallBack = { guideToSettings() },
+                        updateAllWidget,
+                    )
                 }
                 composable(
                     route = "add_custom_sms/{address}",
@@ -255,7 +294,7 @@ fun App(
                         onCallback = { readAndParseSms() })
                 }
                 composable("fail_sms") {
-                    FailSmsScreen(viewModel, navController,readAndParseSms)
+                    FailSmsScreen(viewModel, navController, readAndParseSms)
                 }
                 composable("success_sms") {
                     SuccessSmsScreen(viewModel, navController, readAndParseSms)

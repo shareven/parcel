@@ -40,11 +40,33 @@
         <receiver
             android:name=".widget.ParcelWidget"
             android:exported="true">
-
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/parcel_widget_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".widget.ParcelWidgetLarge"
+            android:exported="true">
 
+        <meta-data
+            android:name="android.appwidget.provider"
+            android:resource="@xml/parcel_widget_large_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
+<!--        MIUI-->
+        <receiver
+            android:name=".widget.ParcelWidgetMiui"
+            android:enabled="false"
+            android:exported="true">
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/parcel_widget_info" />
             <!--            // 定义是否需要曝光刷新-->
             <meta-data
                 android:name="miuiWidgetRefresh"
@@ -66,7 +88,8 @@
         </receiver>
 
         <receiver
-            android:name=".widget.ParcelWidgetLarge"
+            android:name=".widget.ParcelWidgetLargeMiui"
+            android:enabled="false"
             android:exported="true">
 
             <meta-data

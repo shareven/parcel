@@ -11,8 +11,32 @@ import androidx.lifecycle.ViewModelStoreOwner
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import com.xxxx.parcel.widget.ParcelWidget.Companion
 
 class ParcelWidgetLarge : AppWidgetProvider() {
+        override fun onReceive(context: Context, intent: Intent) {
+
+        if ("miui.appwidget.action.APPWIDGET_UPDATE".equals(intent.getAction())) {
+
+                // 获取 ParcelViewModel 实例
+            val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
+                ViewModelProvider(it)[ParcelViewModel::class.java]
+            }
+            updateAppWidget(
+                context,
+                AppWidgetManager.getInstance(context),
+                null,
+                viewModel
+            )
+
+        } else {
+
+            super.onReceive(context, intent);
+
+        }
+
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -32,6 +56,18 @@ class ParcelWidgetLarge : AppWidgetProvider() {
     override fun onEnabled(context: Context?) {
         super.onEnabled(context)
         // 当第一个小部件被添加时调用
+        // 获取 ParcelViewModel 实例
+        if(context!=null) {
+            val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
+                ViewModelProvider(it)[ParcelViewModel::class.java]
+            }
+            ParcelWidget.updateAppWidget(
+                context,
+                AppWidgetManager.getInstance(context),
+                null,
+                viewModel
+            )
+        }
     }
 
     override fun onDisabled(context: Context?) {

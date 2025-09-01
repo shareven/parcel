@@ -12,7 +12,7 @@
 
 # 下载 | Download  
 
-最新版本：v1.0.18
+最新版本：v1.0.19
 
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
@@ -31,6 +31,8 @@
 	
 5. 不发短信的话，可以复制取件码或短信，点击+号自动粘贴导入。也可以在菜鸟APP打开长辈模式，没啥广告
 
+6. 如果github下载不了，请到微云下载[https://share.weiyun.com/6NipcuLD](https://share.weiyun.com/6NipcuLD)
+
 # app展示
 
 
@@ -41,3 +43,5 @@
 <img src="show3.jpg" width="200">
 
 <img src="show4.jpg" width="200">
+
+<img src="show5.jpg" width="200">

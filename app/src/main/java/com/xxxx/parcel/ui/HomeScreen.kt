@@ -61,6 +61,8 @@ import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
 import com.xxxx.parcel.widget.ParcelWidgetLarge
+import com.xxxx.parcel.widget.ParcelWidgetLargeMiui
+import com.xxxx.parcel.widget.ParcelWidgetMiui
 import kotlinx.coroutines.launch
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -70,7 +72,8 @@ fun HomeScreen(
     context: Context,
     viewModel: ParcelViewModel,
     navController: NavController,
-    onCallBack: () -> Unit
+    onCallBack: () -> Unit,
+    updateAllWidget: () -> Unit
 ) {
 
 
@@ -160,7 +163,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (hasPermission) List(context, viewModel, navController) else
+            if (hasPermission) List(context, viewModel, navController, updateAllWidget) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -180,23 +183,23 @@ fun HomeScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 timeFilterOptions.forEachIndexed { index, option ->
                     Text(
-                                text = option,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                                    .clickable {
-                                        saveIndex(context, index)
-                                        viewModel.setTimeFilterIndex(index)
-                                        // 重新根据过滤时间读取短信
-                                        (context as MainActivity).readAndParseSms()
-                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                            if (!sheetState.isVisible) {
-                                                showBottomSheet = false
-                                            }
-                                        }
+                        text = option,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .clickable {
+                                saveIndex(context, index)
+                                viewModel.setTimeFilterIndex(index)
+                                // 重新根据过滤时间读取短信
+                                (context as MainActivity).readAndParseSms()
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) {
+                                        showBottomSheet = false
                                     }
-                            )
+                                }
+                            }
+                    )
                 }
             }
         }
@@ -206,7 +209,12 @@ fun HomeScreen(
 
 
 @Composable
-fun List(context: Context, viewModel: ParcelViewModel, navController: NavController) {
+fun List(
+    context: Context,
+    viewModel: ParcelViewModel,
+    navController: NavController,
+    updateAllWidget: () -> Unit
+) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     if (parcelsData.isEmpty()) Column(
         modifier = Modifier.fillMaxSize(),
@@ -237,7 +245,9 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding( vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -256,9 +266,9 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            
+
                             Spacer(modifier = Modifier.width(8.dp))
-                            
+
                             Text(
                                 text = "${result.address}（${result.num}）",
                                 style = MaterialTheme.typography.bodyLarge,
@@ -271,23 +281,12 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
                         IconButton(
                             modifier = Modifier.size(36.dp),
                             onClick = {
-                                if(result.num > 0) {
+                                if (result.num > 0) {
                                     val ids = result.smsDataList
                                         .filterNot { it.isCompleted }
                                         .map { it.id }
                                     addCompletedIds(context, viewModel, ids)
-                                    ParcelWidget.updateAppWidget(
-                                        context,
-                                        AppWidgetManager.getInstance(context),
-                                        null,
-                                        viewModel
-                                    )
-                                    ParcelWidgetLarge.updateAppWidget(
-                                        context,
-                                        AppWidgetManager.getInstance(context),
-                                        null,
-                                        viewModel
-                                    )
+                                    updateAllWidget()
                                 }
                             },
                             enabled = result.num > 0
@@ -295,7 +294,7 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
                             Icon(
                                 imageVector = Icons.Outlined.CheckCircle,
                                 contentDescription = "标记取件",
-                                tint = if(result.num > 0) MaterialTheme.colorScheme.primary
+                                tint = if (result.num > 0) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.outline
                             )
                         }
@@ -316,28 +315,23 @@ fun List(context: Context, viewModel: ParcelViewModel, navController: NavControl
                                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                         modifier = Modifier
                                             .clickable {
-                                            if (smsData.isCompleted){
-                                                removeCompletedId(context,viewModel,smsData.id)
-                                            }else{
-                                                addCompletedIds(context,viewModel,listOf(smsData.id))
+                                                if (smsData.isCompleted) {
+                                                    removeCompletedId(
+                                                        context,
+                                                        viewModel,
+                                                        smsData.id
+                                                    )
+                                                } else {
+                                                    addCompletedIds(
+                                                        context,
+                                                        viewModel,
+                                                        listOf(smsData.id)
+                                                    )
+                                                }
+
+                                                updateAllWidget()
+
                                             }
-
-                                            // 刷新 AppWidget（不传递 appWidgetId 以更新所有实例）
-                                            ParcelWidget.updateAppWidget(
-                                                context,
-                                                AppWidgetManager.getInstance(context),
-                                                null,
-                                                viewModel
-                                            )
-                                            ParcelWidgetLarge.updateAppWidget(
-                                                context,
-                                                AppWidgetManager.getInstance(context),
-                                                null,
-                                                viewModel
-                                            )
-
-                            
-                                        }
                                     )
                                 }
                             }
