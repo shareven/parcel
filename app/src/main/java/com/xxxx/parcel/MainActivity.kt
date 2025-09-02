@@ -137,7 +137,21 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
 
     private fun init() {
-
+        if (PermissionUtil.isMIUI()) {
+            //小米手机 MIUI widget启用
+            val component = ComponentName(context, ParcelWidgetMiui::class.java)
+            context.packageManager.setComponentEnabledSetting(
+                component,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP
+            )
+            val componentLarge = ComponentName(context, ParcelWidgetLargeMiui::class.java)
+            context.packageManager.setComponentEnabledSetting(
+                componentLarge,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP
+            )
+        }
         // 检查并请求短信权限
         if (!PermissionUtil.hasSmsPermissions(this)) {
             ActivityCompat.requestPermissions(
@@ -150,18 +164,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             )
             if (PermissionUtil.isMIUI()) {
                 //小米手机 显示引导弹窗后调用 requestMiuiSmsPermission()
-                val component = ComponentName(context, ParcelWidgetMiui::class.java)
-                context.packageManager.setComponentEnabledSetting(
-                    component,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP
-                )
-                val componentLarge = ComponentName(context, ParcelWidgetLargeMiui::class.java)
-                context.packageManager.setComponentEnabledSetting(
-                    componentLarge,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP
-                )
                 showMiuiPermissionExplanationDialog(context)
             }
             if (PermissionUtil.hasSmsPermissions(this)) {
