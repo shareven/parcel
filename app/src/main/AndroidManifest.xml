@@ -62,6 +62,7 @@
 <!--        MIUI-->
         <receiver
             android:name=".widget.ParcelWidgetMiui"
+            android:process=":widgetProvider"
             android:enabled="false"
             android:exported="true">
             <meta-data
@@ -89,6 +90,7 @@
 
         <receiver
             android:name=".widget.ParcelWidgetLargeMiui"
+            android:process=":widgetProvider"
             android:enabled="false"
             android:exported="true">
 
