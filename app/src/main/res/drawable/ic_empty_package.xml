@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <!-- 包裹盒子主体 -->
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeWidth="1.5"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"
+      android:pathData="M12,2L2,7L12,12L22,7L12,2Z"/>
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeWidth="1.5"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"
+      android:pathData="M2,17L12,22L22,17"/>
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeWidth="1.5"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"
+      android:pathData="M2,12L12,17L22,12"/>
+  <!-- 问号表示空状态 -->
+  <path
+      android:fillColor="#FF000000"
+      android:pathData="M12,15.5m-0.8,0a0.8,0.8 0,1 1,1.6 0a0.8,0.8 0,1 1,-1.6 0"/>
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeWidth="1.2"
+      android:strokeLineCap="round"
+      android:pathData="M10,9.5C10,8.67 10.67,8 11.5,8C12.33,8 13,8.67 13,9.5C13,10.33 12.33,11 11.5,11L12,11L12,13"/>
+</vector>

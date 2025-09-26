@@ -41,6 +41,7 @@ import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.util.getCustomSmsList
+import com.xxxx.parcel.util.getCustomSmsByTimeFilter
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
 import com.xxxx.parcel.widget.ParcelWidgetLarge
@@ -128,7 +129,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val context = applicationContext
         val daysFilter = viewModel.timeFilterIndex.value
         val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
-        val customSmsList = getCustomSmsList(context)
+        val customSmsList = getCustomSmsByTimeFilter(context, daysFilter)
 
         viewModel.getAllMessageWithCustom(smsList, customSmsList)
 

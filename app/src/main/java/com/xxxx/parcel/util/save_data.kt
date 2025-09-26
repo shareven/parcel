@@ -116,13 +116,40 @@ fun addCustomSms(context: Context, sms: SmsModel) {
 
 // 获取自定义短信列表
 fun getCustomSmsList(context: Context): List<SmsModel> {
+    return getCustomSmsByTimeFilter(context, 0)
+}
+
+// 获取自定义短信列表（带时间过滤）
+fun getCustomSmsByTimeFilter(context: Context, daysFilter: Int): List<SmsModel> {
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
     val jsonString = sharedPreferences.getString("custom_sms_list", "[]") ?: "[]"
-    return try {
+    
+    val allCustomSms = try {
         Json.decodeFromString<List<SmsModel>>(jsonString)
     } catch (e: Exception) {
         emptyList()
+    }
+    
+    // 如果没有时间过滤，返回所有自定义短信
+    if (daysFilter <= 0) {
+        return allCustomSms
+    }
+    
+    // 计算从00:00:00开始的时间范围
+    val calendar = java.util.Calendar.getInstance()
+    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+    calendar.set(java.util.Calendar.MINUTE, 0)
+    calendar.set(java.util.Calendar.SECOND, 0)
+    calendar.set(java.util.Calendar.MILLISECOND, 0)
+    
+    // 减去天数
+    calendar.add(java.util.Calendar.DAY_OF_YEAR, -(daysFilter - 1))
+    val startTime = calendar.timeInMillis
+    
+    // 过滤自定义短信，只返回在时间范围内的
+    return allCustomSms.filter { sms ->
+        sms.timestamp >= startTime
     }
 }
 

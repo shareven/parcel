@@ -23,7 +23,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
+import com.xxxx.parcel.R
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -220,13 +222,62 @@ fun List(
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
     
     if (parcelsData.isEmpty()) Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // 空状态图标
+        Icon(
+            painter = painterResource(id = R.drawable.ic_empty_package),
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // 主标题
         Text(
-            "没有取件码",
-            style = MaterialTheme.typography.bodyLarge
+            text = "暂无取件码",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
+        )
+        
+        
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // 添加自定义短信按钮
+        Button(
+            onClick = {
+                navController.navigate("add_custom_sms/ ")
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "添加自定义取件短信",
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // 提示文本
+        Text(
+            text = "您可以手动添加取件短信或取件码",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
     else
