@@ -104,12 +104,13 @@ fun AddRuleScreen(
 
                     Column {
                         Text(
-                            text = "复制短信中的 取件码填入",
+                            text = "复制短信中的 取件码 填入",
                             style = MaterialTheme.typography.bodyMedium
                         )
-
+                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = codePattern,
+                            placeholder = {Text("选填")},
                             onValueChange = { codePattern = it },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -117,14 +118,32 @@ fun AddRuleScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Column {
                         Text(
-                            text = "复制短信中的 地址填入",
+                            text = "复制短信中的 地址 填入",
                             style = MaterialTheme.typography.bodyMedium
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = addressPattern,
+                            placeholder = {Text("选填")},
                             onValueChange = { addressPattern = it },
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Column {
+                        Text(
+                            text = "填入关键词，不解析短信",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = ignoreKeyword,
+                            placeholder = {Text("选填")},
+                            onValueChange = { ignoreKeyword = it },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -133,63 +152,42 @@ fun AddRuleScreen(
 
 
                         Button(
-                            enabled = addressPattern.isNotEmpty() && codePattern.isNotEmpty()&&message.contains(addressPattern)&&message.contains(codePattern),
+                            enabled = addressPattern.isNotEmpty() && message.contains(addressPattern) || codePattern.isNotEmpty() && message.contains(
+                                codePattern
+                            ) || ignoreKeyword.isNotEmpty(),
                             onClick = {
-                                if (addressPattern.isNotEmpty() && codePattern.isNotEmpty()) {
+                                if (addressPattern.isNotBlank()) {
                                     addCustomList(context, "address", addressPattern)
+                                    viewModel.addCustomAddressPattern(addressPattern)
+                                    addressPattern = ""
+                                }
+                                if (codePattern.isNotBlank()) {
                                     addCustomList(
                                         context,
                                         "code",
                                         message.replace(codePattern, """([\s\S]{2,})""")
                                     )
-                                    viewModel.addCustomAddressPattern(addressPattern)
                                     viewModel.addCustomCodePattern(
                                         message.replace(
                                             codePattern,
                                             """([\s\S]{2,})"""
                                         )
                                     )
-                                    addressPattern = ""
                                     codePattern = ""
-                                    onCallback()
-                                    navController.navigate("home")
                                 }
+                                if (ignoreKeyword.isNotBlank()) {
+                                    addCustomList(context, "ignoreKeywords", ignoreKeyword)
+                                    viewModel.addIgnoreKeyword(ignoreKeyword)
+                                    ignoreKeyword = ""
+                                }
+                                onCallback()
+                                navController.navigate("rules")
                             }
                         ) {
                             Text(text = "点击自动添加规则")
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    Column {
-                        Text(
-                            text = "添加不解析关键词",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = ignoreKeyword,
-                            onValueChange = { ignoreKeyword = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("输入关键词") }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            enabled = ignoreKeyword.isNotBlank(),
-                            onClick = {
-                                if (ignoreKeyword.isNotBlank()) {
-                                    addCustomList(context, "ignoreKeywords", ignoreKeyword)
-                                    viewModel.addIgnoreKeyword(ignoreKeyword)
-                                    ignoreKeyword = ""
-                                    onCallback()
-                                    navController.navigate("rules")
-                                }
-                            }
-                        ) {
-                            Text(text = "添加关键词")
-                        }
-                    }
+
                 }
 
             }
