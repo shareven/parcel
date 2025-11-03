@@ -7,9 +7,9 @@ import java.util.regex.Pattern
 class SmsParser {
     // 使用正则表达式来匹配地址和取件码（1个或多个取件码）
     private val addressPattern: Pattern =
-        Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|已到达|到达|已到|送达|到)[\s\S]*?([\w\s-]+?(?:巷|号|门牌|楼|栋|单元|室|铺|驿站|部|小区|快递|,|，|。|$)\d*)""")
+        Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到)[\s\S]*?([\w\s-]+?(?:巷|号|门牌|楼|栋|单元|室|铺|驿站|部|小区|快递超市|快递|,|，|。|$)\d*)""")
     private val codePattern: Pattern = Pattern.compile(
-        """(?i)(取件码为|取货码为|提货码为|取件码|取货码|提货码|凭|快递|京东|天猫|中通|顺丰|韵达|德邦|菜鸟|拼多多|EMS|闪送|美团|饿了么|盒马|叮咚买菜|UU跑腿|签收码|签收编号|操作码|提货编码|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[A-Za-z0-9\s-]{2,}(?:[，,、][A-Za-z0-9\s-]{2,})*"""
+        """(?i)(取件码为|提货号为|取货码为|提货码为|取件码\(|提货号\(|取货码\(|提货码\(|取件码|提货号|取货码|提货码|凭|快递|京东|天猫|中通|顺丰|韵达|德邦|菜鸟|拼多多|EMS|闪送|美团|饿了么|盒马|叮咚买菜|UU跑腿|签收码|签收编号|操作码|提货编码|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[A-Za-z0-9\s-]{2,}(?:[，,、][A-Za-z0-9\s-]{2,})*"""
     )
 
     // 动态规则存储
@@ -38,16 +38,15 @@ class SmsParser {
                 break
             }
         }
-
-        for (pattern in customCodePatterns) {
+       for (pattern in customCodePatterns) {
             val matcher = pattern.matcher(sms)
             if (matcher.find()) {
                 foundCode = matcher.group(1)?.toString() ?: ""
                 break
             }
         }
-        // 如果自定义规则没有找到，尝试使用默认规则
 
+        // 如果自定义规则没有找到，尝试使用默认规则
         if (foundAddress.isEmpty()) {
             val addressMatcher: Matcher = addressPattern.matcher(sms)
             foundAddress =

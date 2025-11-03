@@ -162,17 +162,24 @@ fun AddRuleScreen(
                                     addressPattern = ""
                                 }
                                 if (codePattern.isNotBlank()) {
+                                    // 转义正则表达式中的特殊字符，但保留捕获组
+                                    val escapedCodePattern = java.util.regex.Pattern.quote(codePattern)
+                                    
+                                    // 分别转义取件码前后的部分为字面字符
+                                    val parts = message.split(codePattern, limit = 2)
+                                    val regexPattern = if (parts.size == 2) {
+                                        java.util.regex.Pattern.quote(parts[0]) + """([\s\S]{2,})""" + java.util.regex.Pattern.quote(parts[1])
+                                    } else {
+                                        // 如果分割失败，使用原来的方法
+                                        java.util.regex.Pattern.quote(message).replace(escapedCodePattern, """([\s\S]{2,})""")
+                                    }
+                                    
                                     addCustomList(
                                         context,
                                         "code",
-                                        message.replace(codePattern, """([\s\S]{2,})""")
+                                        regexPattern
                                     )
-                                    viewModel.addCustomCodePattern(
-                                        message.replace(
-                                            codePattern,
-                                            """([\s\S]{2,})"""
-                                        )
-                                    )
+                                    viewModel.addCustomCodePattern(regexPattern)
                                     codePattern = ""
                                 }
                                 if (ignoreKeyword.isNotBlank()) {
