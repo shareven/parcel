@@ -1,0 +1,51 @@
+name: Build Android APK # 工作流的名称，会在GitHub页面上显示
+
+# 触发工作流的条件：当代码被推送到 'main' 分支时，自动运行
+on:
+  push:
+    branches: [ main ]
+
+# 工作流包含一个名为 "build" 的任务
+jobs:
+  build:
+
+    # 这个任务运行在GitHub提供的最新版Ubuntu虚拟机环境中
+    runs-on: ubuntu-latest
+
+    # 定义任务的所有步骤
+    steps:
+    # 步骤1：获取你的代码。这是必须的第一步。
+    - name: Checkout code
+      # 使用官方提供的“检出代码”动作
+      uses: actions/checkout@v4
+
+    # 步骤2：设置Java环境
+    - name: Set up JDK 17
+      # 使用官方提供的“设置Java”动作
+      uses: actions/setup-java@v4
+      with:
+        # 选择JDK版本，17是Android开发目前常用的版本，你可以根据你的项目需求修改（如11, 21）
+        java-version: '17'
+        # 使用Gradle的发行版
+        distribution: 'temurin'
+
+    # 步骤3：给Gradle包装脚本（gradlew）添加可执行权限
+    - name: Make Gradle wrapper executable
+      run: chmod +x ./gradlew
+
+    # 步骤4：使用Gradle命令构建APK（核心步骤！）
+    - name: Build APK with Gradle
+      # 这个命令和你在本地运行的命令一模一样
+      run: ./gradlew assembleDebug
+
+    # 步骤5：上传构建生成的APK文件，作为一个可供下载的“制品”
+    - name: Upload APK
+      # 使用官方提供的“上传制品”动作
+      uses: actions/upload-artifact@v4
+      with:
+        # 制品的名称，你可以自定义，比如 my-app-apk
+        name: MyApp-Debug-APK
+        # APK文件在虚拟机中的路径。
+        # 通常路径是：app/build/outputs/apk/debug/app-debug.apk
+        # 如果你的App模块不叫‘app’，比如叫‘mobile’，则路径应为 mobile/build/...
+        path: app/build/outputs/apk/debug/app-debug.apk
