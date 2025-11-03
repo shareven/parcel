@@ -21,7 +21,17 @@ jobs:
     - name: Make Gradle wrapper executable
       run: chmod +x ./gradlew
 
-    - name: Build Debug APK only (跳过Release构建)
+    - name: Create dummy key.properties file (解决签名配置问题)
+      run: |
+        # 创建一个空的key.properties文件，避免null转换错误
+        cat > key.properties << EOL
+        keyAlias=dummy
+        keyPassword=dummy  
+        storeFile=dummy
+        storePassword=dummy
+        EOL
+
+    - name: Build Debug APK
       run: ./gradlew assembleDebug
 
     - name: Upload APK
