@@ -20,9 +20,9 @@ class SmsParser {
         Pattern.compile("""(?i)(?:到|位于|放至|送达|放入)[\s]*([^，。！？\s]+[\s\S]*?)(?=取件|$|请|尽快|及时)""")
     )
 
-    // 取件码模式（保持不变）
+    // 增强的取件码模式：支持「」【】等多种括号
     private val codePattern: Pattern = Pattern.compile(
-        """(?i)(取件码为|提货号为|取货码为|提货码为|取件码『|提货号『|取货码『|提货码『|取件码【|提货号【|取货码【|提货码【|取件码\(|提货号\(|取货码\(|提货码\(|取件码\[|提货号\[|取货码\[|提货码\[|取件码|提货号|取货码|提货码|凭|快递|京东|天猫|中通|顺丰|韵达|德邦|菜鸟|拼多多|EMS|闪送|美团|饿了么|盒马|叮咚买菜|UU跑腿|签收码|签收编号|操作码|提货编码|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[A-Za-z0-9\s-]{2,}(?:[，,、][A-Za-z0-9\s-]{2,})*"""
+        """(?i)(取件码为?|提货号为?|取货码为?|提货码为?|取件码[『「【\(\[ ]|提货号[『「【\(\[ ]|取货码[『「【\(\[ ]|提货码[『「【\(\[ ]|取件码|提货号|取货码|提货码|凭|快递|京东|天猫|中通|顺丰|韵达|德邦|菜鸟|拼多多|EMS|闪送|美团|饿了么|盒马|叮咚买菜|UU跑腿|签收码|签收编号|操作码|提货编码|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)[:\s]*[『「【\(\[ ]*([A-Za-z0-9\s-]{4,})[」』】\)\]]*"""
     )
 
     // 动态规则存储
@@ -77,9 +77,12 @@ class SmsParser {
                         2 -> matcher.group(1) ?: ""  // 模式3：纯地址
                         3 -> matcher.group(1) ?: ""  // 模式4：到xxx
                         else -> matcher.group(0) ?: ""
+                    }.trim()
+                    
+                    if (foundAddress.isNotEmpty()) {
+                        Log.d("SmsParser", "模式${index + 1}匹配到地址: '$foundAddress'")
+                        break
                     }
-                    Log.d("SmsParser", "模式${index + 1}匹配到地址: '$foundAddress'")
-                    break
                 }
             }
         }
@@ -90,32 +93,47 @@ class SmsParser {
             val allCodes = mutableListOf<String>()
 
             while (codeMatcher.find()) {
-                val match = codeMatcher.group(0) ?: ""
-                Log.d("SmsParser", "取件码原始匹配: $match")
+                // 尝试从不同的group中提取取件码
+                var code = ""
+                for (i in 1..codeMatcher.groupCount()) {
+                    val group = codeMatcher.group(i) ?: ""
+                    if (group.isNotBlank() && isValidCode(group)) {
+                        code = group.trim()
+                        break
+                    }
+                }
                 
-                // 提取纯数字和字母组合（取件码）
-                val codePattern = Pattern.compile("""[A-Za-z0-9-]{4,}""")
-                val codeMatcherInner = codePattern.matcher(match)
-                
-                while (codeMatcherInner.find()) {
-                    val code = codeMatcherInner.group()
-                    // 过滤掉明显不是取件码的内容（如日期、电话号码等）
-                    if (isValidCode(code) && !allCodes.contains(code)) {
+                if (code.isNotEmpty() && !allCodes.contains(code)) {
+                    allCodes.add(code)
+                    Log.d("SmsParser", "取件码匹配: $code")
+                }
+            }
+            
+            // 如果上面的方法没找到，尝试备选方法
+            if (allCodes.isEmpty()) {
+                val backupCodePattern = Pattern.compile("""[凭|码|码为|码是][\s:：]*[『「【\(\[ ]*([A-Za-z0-9-]{4,})[」』】\)\]]*""")
+                val backupMatcher = backupCodePattern.matcher(sms)
+                if (backupMatcher.find()) {
+                    val code = backupMatcher.group(1) ?: ""
+                    if (isValidCode(code)) {
                         allCodes.add(code)
+                        Log.d("SmsParser", "备选方法匹配到取件码: $code")
                     }
                 }
             }
             
             foundCode = allCodes.joinToString(", ")
-            Log.d("SmsParser", "最终取件码: '$foundCode'")
         }
 
         // 清理地址文本
         foundAddress = cleanAddressText(foundAddress)
+        foundCode = cleanCodeText(foundCode)
+        
         Log.d("SmsParser", "清理后地址: '$foundAddress'")
+        Log.d("SmsParser", "清理后取件码: '$foundCode'")
         
         val success = foundAddress.isNotEmpty() && foundCode.isNotEmpty()
-        Log.d("SmsParser", "解析结果: 成功=$success, 地址='$foundAddress', 取件码='$foundCode'")
+        Log.d("SmsParser", "解析结果: 成功=$success")
         
         return ParseResult(foundAddress, foundCode, success)
     }
@@ -124,14 +142,19 @@ class SmsParser {
      * 验证是否为有效的取件码
      */
     private fun isValidCode(code: String): Boolean {
+        if (code.length < 4) return false
+        
         // 排除纯数字且长度超过8位的（可能是电话号码或日期）
-        if (code.matches(Regex("""^\d{9,}$"""))) return false
+        if (code.matches(Regex("""^\\d{9,}$"""))) return false
         
         // 排除纯数字且长度小于4位的
-        if (code.matches(Regex("""^\d{1,3}$"""))) return false
+        if (code.matches(Regex("""^\\d{1,3}$"""))) return false
         
         // 排除常见的日期格式
-        if (code.matches(Regex("""^\d{4}[-/]\d{1,2}[-/]\d{1,2}$"""))) return false
+        if (code.matches(Regex("""^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}$"""))) return false
+        
+        // 排除明显不是取件码的内容
+        if (code.contains(Regex("""[年月日时分秒]"""))) return false
         
         return true
     }
@@ -140,11 +163,13 @@ class SmsParser {
      * 清理地址文本
      */
     private fun cleanAddressText(address: String): String {
+        if (address.isEmpty()) return ""
+        
         var cleaned = address
             .replace(Regex("[,，。！？!?|｜]"), "")  // 移除标点符号
             .replace(Regex("取件$"), "")  // 移除结尾的"取件"
-            .replace(Regex("^[|｜\s]+"), "")  // 移除开头的|和空格
-            .replace(Regex("[\s]+$"), "")  // 移除结尾的空格
+            .replace(Regex("^[|｜\\s]+"), "")  // 移除开头的|和空格
+            .replace(Regex("[\\s]+$"), "")  // 移除结尾的空格
             .trim()
         
         // 如果地址以快递品牌开头，移除品牌名
@@ -159,6 +184,18 @@ class SmsParser {
         return cleaned
     }
 
+    /**
+     * 清理取件码文本
+     */
+    private fun cleanCodeText(code: String): String {
+        if (code.isEmpty()) return ""
+        
+        return code
+            .replace(Regex("""[『「【\(\[」』】\)\]]"""), "")  // 移除所有括号
+            .replace(Regex("""\\s+"""), "")  // 移除所有空格
+            .trim()
+    }
+
     // 添加自定义解析规则
     fun addCustomAddressPattern(pattern: String) {
         customAddressPatterns.add(pattern)
@@ -166,8 +203,12 @@ class SmsParser {
     }
 
     fun addCustomCodePattern(pattern: String) {
-        customCodePatterns.add(Pattern.compile(pattern))
-        Log.d("SmsParser", "添加自定义取件码规则: $pattern")
+        try {
+            customCodePatterns.add(Pattern.compile(pattern))
+            Log.d("SmsParser", "添加自定义取件码规则: $pattern")
+        } catch (e: Exception) {
+            Log.e("SmsParser", "无效的正则表达式: $pattern", e)
+        }
     }
 
     fun clearAllCustomPatterns() {
