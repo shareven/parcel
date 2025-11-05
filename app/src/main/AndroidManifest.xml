@@ -59,6 +59,17 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".widget.ParcelWidgetXL"
+            android:exported="true">
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/parcel_widget_xl_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
 <!--        MIUI-->
         <receiver
             android:name=".widget.ParcelWidgetMiui"
@@ -116,6 +127,18 @@
                 <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
         </receiver>
+
+        <!-- 通知监听服务，用于从第三方APP通知中提取取件码/短信内容 -->
+        <service
+            android:name=".notification.ParcelNotificationListenerService"
+            android:label="Parcel Notification Service"
+            android:enabled="true"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- 小部件服务 -->
         <!--        <service-->

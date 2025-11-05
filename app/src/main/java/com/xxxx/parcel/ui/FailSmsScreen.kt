@@ -30,12 +30,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import com.xxxx.parcel.util.removeCustomSms
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import java.net.URLEncoder
+import com.xxxx.parcel.util.dateToString
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,20 +81,26 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController,readA
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                         horizontalAlignment = Alignment.Start
                     ) {
                         SelectionContainer {
                             Text(
                                 text = message.body,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(40.dp),
+                                    .fillMaxWidth(),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
 
-
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${dateToString(message.timestamp)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)

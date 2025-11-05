@@ -34,13 +34,13 @@ import com.xxxx.parcel.ui.FailSmsScreen
 import com.xxxx.parcel.ui.HomeScreen
 import com.xxxx.parcel.ui.RulesScreen
 import com.xxxx.parcel.ui.SuccessSmsScreen
+import com.xxxx.parcel.ui.UseNotificationScreen
 import com.xxxx.parcel.ui.theme.ParcelTheme
 import com.xxxx.parcel.util.PermissionUtil
 import com.xxxx.parcel.util.PermissionUtil.showMiuiPermissionExplanationDialog
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
-import com.xxxx.parcel.util.getCustomSmsList
 import com.xxxx.parcel.util.getCustomSmsByTimeFilter
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
@@ -48,6 +48,10 @@ import com.xxxx.parcel.widget.ParcelWidgetLarge
 import com.xxxx.parcel.widget.ParcelWidgetLargeMiui
 import com.xxxx.parcel.widget.ParcelWidgetMiui
 import java.net.URLDecoder
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.os.Build
+import com.xxxx.parcel.widget.ParcelWidgetXL
 
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -56,6 +60,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     val context = this
     val smsParser = SmsParser()
     val viewModel = ParcelViewModel(smsParser)
+    private var customSmsReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,6 +111,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             viewModel
         )
         ParcelWidgetLarge.updateAppWidget(
+            context,
+            AppWidgetManager.getInstance(context),
+            null,
+            viewModel
+        )
+        ParcelWidgetXL.updateAppWidget(
             context,
             AppWidgetManager.getInstance(context),
             null,
@@ -186,8 +197,28 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 updateAllWidget = { updateAllWidget() },
             )
         }
+
+        // 注册接收“自定义短信已添加”的广播，统一触发 UI 刷新
+        registerCustomSmsAddedReceiver()
     }
 
+    private fun registerCustomSmsAddedReceiver() {
+        val action = "com.xxxx.parcel.CUSTOM_SMS_ADDED"
+        customSmsReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == action) {
+                    readAndParseSms()
+                }
+            }
+        }
+        val filter = IntentFilter(action)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(customSmsReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(customSmsReceiver, filter)
+        }
+    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -221,7 +252,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     override fun onDestroy() {
         super.onDestroy()
-        contentResolver.unregisterContentObserver(smsContentObserver)
+        // 取消短信删除监控
+        try {
+            contentResolver.unregisterContentObserver(smsContentObserver)
+        } catch (_: Exception) { }
+        // 取消自定义短信广播接收
+        customSmsReceiver?.let {
+            try {
+                unregisterReceiver(it)
+            } catch (_: Exception) { }
+        }
     }
 
 }
@@ -304,6 +344,9 @@ fun App(
                 }
                 composable("about") {
                     AboutScreen(navController)
+                }
+                composable("use_notification") {
+                    UseNotificationScreen(navController)
                 }
             }
         }

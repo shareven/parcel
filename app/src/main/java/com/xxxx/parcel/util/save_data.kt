@@ -169,3 +169,133 @@ private fun saveCustomSmsList(context: Context, smsList: List<SmsModel>) {
     editor.putString("custom_sms_list", jsonString)
     editor.apply()
 }
+
+// ===== 通知监听与应用标题/开关的本地存储封装 =====
+fun getMainSwitch(context: Context): Boolean {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    return sp.getBoolean("notification_listener_enabled", false)
+}
+
+fun setMainSwitch(context: Context, value: Boolean) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().putBoolean("notification_listener_enabled", value).apply()
+}
+
+fun getAppSwitch(context: Context, packageName: String): Boolean {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    return sp.getBoolean("listen_package_${packageName}", false)
+}
+
+fun setAppSwitch(context: Context, packageName: String, value: Boolean) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().putBoolean("listen_package_${packageName}", value).apply()
+}
+
+fun getAppTitle(context: Context, packageName: String): String {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    return sp.getString("listen_title_${packageName}", "") ?: ""
+}
+
+fun setAppTitle(context: Context, packageName: String, title: String) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().putString("listen_title_${packageName}", title).apply()
+}
+
+// 读取会话标题列表（优先使用新版 JSON Key，若存在则专用，不回退旧键）
+fun getAppTitles(
+    context: Context,
+    packageName: String,
+    count: Int = 5,
+    defaultFirst: String = ""
+): List<String> {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val jsonKey = "listen_titles_${packageName}"
+    // 若 JSON Key 存在，严格仅用该键（即使为空也不回退旧键）
+    if (sp.contains(jsonKey)) {
+        val jsonStr = sp.getString(jsonKey, null)
+        if (!jsonStr.isNullOrBlank()) {
+            try {
+                val arr = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) {
+                    list.add(arr.optString(i))
+                }
+                val cleaned = list.filter { it.isNotBlank() }
+                return if (cleaned.isNotEmpty()) cleaned else if (defaultFirst.isNotBlank()) listOf(defaultFirst) else emptyList()
+            } catch (_: Exception) {
+                // JSON 解析失败时返回空或默认
+                return if (defaultFirst.isNotBlank()) listOf(defaultFirst) else emptyList()
+            }
+        }
+        // JSON 字符串为空，返回空或默认
+        return if (defaultFirst.isNotBlank()) listOf(defaultFirst) else emptyList()
+    }
+
+    // 旧版本兼容：按多标题旧键读取
+    val titles = MutableList(count) { index ->
+        val key = "listen_title_${packageName}_${index + 1}"
+        sp.getString(key, "") ?: ""
+    }
+
+    // 若全部为空，尝试单标题旧键
+    if (titles.all { it.isBlank() }) {
+        val single = sp.getString("listen_title_${packageName}", "") ?: ""
+        if (single.isNotBlank()) titles[0] = single
+    }
+
+    if (titles[0].isBlank() && defaultFirst.isNotBlank()) titles[0] = defaultFirst
+    return titles.filter { it.isNotBlank() }.ifEmpty { if (defaultFirst.isNotBlank()) listOf(defaultFirst) else emptyList() }
+}
+
+fun setAppTitleAt(context: Context, packageName: String, index: Int, title: String) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().putString("listen_title_${packageName}_${index}", title).apply()
+}
+
+fun setAppTitles(context: Context, packageName: String, titles: List<String>) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val cleaned = titles.map { it.trim() }.filter { it.isNotBlank() }
+    val jsonArr = org.json.JSONArray()
+    cleaned.forEach { jsonArr.put(it) }
+    sp.edit().putString("listen_titles_${packageName}", jsonArr.toString()).apply()
+}
+
+// 提供给通知服务使用的别名函数，保持命名一致
+fun isMainSwitchEnabled(context: Context): Boolean = getMainSwitch(context)
+
+fun isAppSwitchEnabled(context: Context, packageName: String): Boolean = getAppSwitch(context, packageName)
+
+fun getTitleForPackage(context: Context, packageName: String, defaultTitle: String = ""): String {
+    val titles = getAppTitles(context, packageName, defaultFirst = defaultTitle)
+    return titles.firstOrNull()?.takeIf { it.isNotBlank() } ?: defaultTitle
+}
+
+fun getTitlesForPackage(context: Context, packageName: String, count: Int = 5, defaultFirst: String? = null): List<String> {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val jsonKey = "listen_titles_${packageName}"
+    if (sp.contains(jsonKey)) {
+        val jsonStr = sp.getString(jsonKey, null)
+        if (!jsonStr.isNullOrBlank()) {
+            return try {
+                val arr = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) list.add(arr.optString(i))
+                list.filter { it.isNotBlank() }
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+        return emptyList()
+    }
+    // 旧键读取
+    val titles = MutableList(count) { index ->
+        val key = "listen_title_${packageName}_${index + 1}"
+        sp.getString(key, "") ?: ""
+    }
+    if (titles.all { it.isBlank() }) {
+        val single = sp.getString("listen_title_${packageName}", "") ?: ""
+        if (single.isNotBlank()) titles[0] = single
+    }
+    val cleaned = titles.filter { it.isNotBlank() }
+    return if (cleaned.isNotEmpty()) cleaned else if (defaultFirst != null && defaultFirst.isNotBlank()) listOf(defaultFirst) else emptyList()
+}

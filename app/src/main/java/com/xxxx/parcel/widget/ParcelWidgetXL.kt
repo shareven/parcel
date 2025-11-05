@@ -11,14 +11,13 @@ import androidx.lifecycle.ViewModelStoreOwner
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.viewmodel.ParcelViewModel
-import com.xxxx.parcel.widget.ParcelWidget.Companion
 
-class ParcelWidgetLargeMiui : AppWidgetProvider() {
-        override fun onReceive(context: Context, intent: Intent) {
+class ParcelWidgetXL : AppWidgetProvider() {
+    override fun onReceive(context: Context, intent: Intent) {
 
         if ("miui.appwidget.action.APPWIDGET_UPDATE".equals(intent.getAction())) {
 
-                // 获取 ParcelViewModel 实例
+            // 获取 ParcelViewModel 实例
             val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
                 ViewModelProvider(it)[ParcelViewModel::class.java]
             }
@@ -61,7 +60,7 @@ class ParcelWidgetLargeMiui : AppWidgetProvider() {
             val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
                 ViewModelProvider(it)[ParcelViewModel::class.java]
             }
-            ParcelWidget.updateAppWidget(
+            updateAppWidget(
                 context,
                 AppWidgetManager.getInstance(context),
                 null,
@@ -86,7 +85,7 @@ class ParcelWidgetLargeMiui : AppWidgetProvider() {
             if (appWidgetId == null) {
                 val manager = AppWidgetManager.getInstance(context)
                 val ids = manager.getAppWidgetIds(
-                    android.content.ComponentName(context, ParcelWidgetLargeMiui::class.java)
+                    android.content.ComponentName(context, ParcelWidgetXL::class.java)
                 )
                 for (id in ids) {
                     updateSingleAppWidget(context, manager, id, viewModel)

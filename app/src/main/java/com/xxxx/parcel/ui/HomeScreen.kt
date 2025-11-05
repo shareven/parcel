@@ -1,10 +1,8 @@
 package com.xxxx.parcel.ui
 
 import android.annotation.SuppressLint
-import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.compose.foundation.clickable
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
 import com.xxxx.parcel.R
@@ -33,6 +32,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -62,10 +63,6 @@ import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
-import com.xxxx.parcel.widget.ParcelWidget
-import com.xxxx.parcel.widget.ParcelWidgetLarge
-import com.xxxx.parcel.widget.ParcelWidgetLargeMiui
-import com.xxxx.parcel.widget.ParcelWidgetMiui
 import kotlinx.coroutines.launch
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -103,7 +100,7 @@ fun HomeScreen(
 
     val selectedTimeFilterIndex by viewModel.timeFilterIndex.collectAsState()
     val failedData by viewModel.failedMessages.collectAsState()
-    val succssData by viewModel.successSmsData.collectAsState()
+    val successData by viewModel.successSmsData.collectAsState()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -130,7 +127,7 @@ fun HomeScreen(
                         onClick = { navController.navigate("success_sms") },
                     ) {
                         Text(
-                            text = succssData.size.toString(),
+                            text = successData.size.toString(),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -150,11 +147,43 @@ fun HomeScreen(
                         )
                     }
 
-                    Spacer(Modifier.width(16.dp))
-                    TextButton(
-                        onClick = { navController.navigate("about") },
-                    ) {
-                        Text(text = "关于")
+                    Spacer(Modifier.width(8.dp))
+                    // 顶栏菜单：规则列表 / 监听第三方app通知 / 关于
+                    var showMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "菜单")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("添加自定义取件短信") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("add_custom_sms/ ")
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("规则列表") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("rules")
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("监听第三方app通知") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("use_notification")
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("关于") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("about")
+                                }
+                            )
+                        }
                     }
 
                 }
@@ -220,7 +249,7 @@ fun List(
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
-    
+
     if (parcelsData.isEmpty()) Column(
         modifier = Modifier
             .fillMaxSize()
@@ -235,9 +264,9 @@ fun List(
             modifier = Modifier.size(80.dp),
             tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // 主标题
         Text(
             text = "暂无取件码",
@@ -245,11 +274,11 @@ fun List(
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium
         )
-        
-        
-        
+
+
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // 添加自定义短信按钮
         Button(
             onClick = {
@@ -268,9 +297,9 @@ fun List(
                 style = MaterialTheme.typography.labelLarge
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // 提示文本
         Text(
             text = "您可以手动添加取件短信或取件码",

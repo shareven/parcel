@@ -11,6 +11,7 @@ import com.xxxx.parcel.model.SmsModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.Calendar
 
 class SmsUtil {
     companion object {
@@ -76,4 +77,19 @@ fun dateToString(timestamp: Long): String {
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         .format(Date(timestamp))
 
+}
+
+// 判断是否为自定义短信
+fun isCustomSms(sms: SmsModel): Boolean {
+    return sms.body.startsWith("【自定义取件短信】")
+}
+
+
+fun isSameDay(ts1: Long, ts2: Long): Boolean {
+    val c1 = Calendar.getInstance()
+    c1.timeInMillis = ts1
+    val c2 = Calendar.getInstance()
+    c2.timeInMillis = ts2
+    return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR) &&
+            c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR)
 }
