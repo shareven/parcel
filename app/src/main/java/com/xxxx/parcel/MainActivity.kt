@@ -51,6 +51,7 @@ import java.net.URLDecoder
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Build
+import com.xxxx.parcel.widget.ParcelWidgetXL
 
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -110,6 +111,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             viewModel
         )
         ParcelWidgetLarge.updateAppWidget(
+            context,
+            AppWidgetManager.getInstance(context),
+            null,
+            viewModel
+        )
+        ParcelWidgetXL.updateAppWidget(
             context,
             AppWidgetManager.getInstance(context),
             null,

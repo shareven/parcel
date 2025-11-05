@@ -39,6 +39,7 @@ import androidx.navigation.NavController
 import com.xxxx.parcel.util.removeCustomSms
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import java.net.URLEncoder
+import com.xxxx.parcel.util.dateToString
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +97,12 @@ fun SuccessSmsScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${dateToString(data.sms.timestamp)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         SelectionContainer {
                             Text(
                                 text = "地址: ${data.address}\n取件码: ${data.code}",

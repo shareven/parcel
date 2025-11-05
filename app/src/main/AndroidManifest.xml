@@ -59,6 +59,17 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".widget.ParcelWidgetXL"
+            android:exported="true">
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/parcel_widget_xl_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
 <!--        MIUI-->
         <receiver
             android:name=".widget.ParcelWidgetMiui"

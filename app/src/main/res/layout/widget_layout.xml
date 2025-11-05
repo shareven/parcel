@@ -94,5 +94,53 @@
             android:textColor="@color/black"
             android:textSize="16sp" />
 
+        <TextView
+            android:id="@+id/widget_address4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/color999"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_codes4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/widget_address5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/color999"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_codes5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/widget_address6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/color999"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_codes6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
     </LinearLayout>
 </LinearLayout>

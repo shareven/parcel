@@ -143,6 +143,42 @@ class ParcelWidgetMiui : AppWidgetProvider() {
                 codeList3 = ""
             }
 
+            val fourthMessage = viewModel?.parcelsData?.value?.getOrNull(3)
+            var address4 = fourthMessage?.address ?: ""
+            var codeList4 = ""
+            if (fourthMessage != null && fourthMessage.num > 0) {
+                codeList4 = fourthMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
+                    .joinToString(separator = "\n")
+                address4 += "（${fourthMessage.num}）"
+            } else {
+                address4 = ""
+                codeList4 = ""
+            }
+
+            val fifthMessage = viewModel?.parcelsData?.value?.getOrNull(4)
+            var address5 = fifthMessage?.address ?: ""
+            var codeList5 = ""
+            if (fifthMessage != null && fifthMessage.num > 0) {
+                codeList5 = fifthMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
+                    .joinToString(separator = "\n")
+                address5 += "（${fifthMessage.num}）"
+            } else {
+                address5 = ""
+                codeList5 = ""
+            }
+
+            val sixthMessage = viewModel?.parcelsData?.value?.getOrNull(5)
+            var address6 = sixthMessage?.address ?: ""
+            var codeList6 = ""
+            if (sixthMessage != null && sixthMessage.num > 0) {
+                codeList6 = sixthMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
+                    .joinToString(separator = "\n")
+                address6 += "（${sixthMessage.num}）"
+            } else {
+                address6 = ""
+                codeList6 = ""
+            }
+
 
             // 构建 RemoteViews 对象
             val views = RemoteViews(context.packageName, R.layout.widget_layout).apply {
@@ -154,6 +190,13 @@ class ParcelWidgetMiui : AppWidgetProvider() {
                 setTextViewText(R.id.widget_codes2, codeList2)
                 setTextViewText(R.id.widget_address3, address3)
                 setTextViewText(R.id.widget_codes3, codeList3)
+
+                setTextViewText(R.id.widget_address4, address4)
+                setTextViewText(R.id.widget_codes4, codeList4)
+                setTextViewText(R.id.widget_address5, address5)
+                setTextViewText(R.id.widget_codes5, codeList5)
+                setTextViewText(R.id.widget_address6, address6)
+                setTextViewText(R.id.widget_codes6, codeList6)
 
                 // 设置点击意图
                 val intent = Intent(context, MainActivity::class.java).apply {
