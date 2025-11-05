@@ -6,13 +6,15 @@
 
 您可以添加自定义规则来改进解析效果。
 
+还支持监听第三方app通知，自动保存取件码消息，帮微信朋友取快递更方便了
+
 桌面卡片添加：一般是藏在全部卡片-最底部的插件或者安卓小组件里面
 
 欢迎下载和使用！有问题或建议请提issue。
 
 # 下载 | Download  
 
-最新版本：v1.0.25
+最新版本：v1.0.26
 
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
@@ -40,8 +42,11 @@
 
 <img src="show2.jpg" width="200">
 
+<img src="show6.jpg" width="200">
+
 <img src="show3.jpg" width="200">
 
 <img src="show4.jpg" width="200">
 
 <img src="show5.jpg" width="200">
+

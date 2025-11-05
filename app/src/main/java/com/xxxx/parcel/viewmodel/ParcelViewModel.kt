@@ -3,20 +3,15 @@ package com.xxxx.parcel.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.util.copy
 import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.isSameDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 
 class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewModel() {
     // 所有短信列表
@@ -90,16 +85,24 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
                 val currentFailed = _failedMessages.value.toMutableList()
 
 
-                val result = smsParser.parseSms(sms.body)
+                val result: SmsParser.ParseResult = smsParser.parseSms(sms.body)
 
                     if (result.success) {
                         Log.d("成功短信", sms.body)
                         Log.d("解析", "addr:${result.address} code:${result.code} ")
                         currentSuccessful.add(SmsData(result.address, result.code, sms, sms.id))
                         // 把同一地址的取件码添加到 parcels 列表中
-                        currentParcels.find { it.address == result.address }?.let {
-                            it.smsDataList.add(SmsData(result.address, result.code, sms, sms.id))
-                            it.smsDataList.sortBy { x -> x.code }
+                        currentParcels.find { it.address == result.address }?.let { parcel ->
+                            val newItem = SmsData(result.address, result.code, sms, sms.id)
+                            val existsSameDaySameAddrCode = parcel.smsDataList.any { existing ->
+                                existing.address == newItem.address &&
+                                        existing.code == newItem.code &&
+                                        isSameDay(existing.sms.timestamp, newItem.sms.timestamp)
+                            }
+                            if (!existsSameDaySameAddrCode) {
+                                parcel.smsDataList.add(newItem)
+                                parcel.smsDataList.sortBy { x -> x.code }
+                            }
                         } ?: run {
                             currentParcels.add(
                                 ParcelData(
@@ -124,6 +127,7 @@ class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewMode
             }
         }
     }
+
 
     //计算包裹数量, 判断是否已取件
     private fun calculateNumAndIsCompleted() {
