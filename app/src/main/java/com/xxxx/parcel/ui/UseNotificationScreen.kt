@@ -79,8 +79,8 @@ fun UseNotificationScreen(navController: NavController) {
     val xhsPackage = "com.xingin.xhs"
     val wechatPackage = "com.tencent.mm"
 
-    var pddTitle by remember { mutableStateOf(getAppTitle(context, pddPackage).ifBlank { "商品代取件提醒" }) }
-    var xhsTitle by remember { mutableStateOf(getAppTitle(context, xhsPackage).ifBlank { "订单代取件" }) }
+    var pddTitle by remember { mutableStateOf(getAppTitle(context, pddPackage).ifBlank { "商品待取件提醒" }) }
+    var xhsTitle by remember { mutableStateOf(getAppTitle(context, xhsPackage).ifBlank { "订单待取件" }) }
     var wechatTitles by remember { mutableStateOf(getAppTitles(context, wechatPackage, count = 5, defaultFirst = "老婆")) }
 
     var mainEnabled by remember { mutableStateOf(getMainSwitch(context)) }
