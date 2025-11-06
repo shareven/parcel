@@ -37,12 +37,12 @@ class ParcelNotificationListenerService : NotificationListenerService() {
 
             when (pkg) {
                 pddPackage -> {
-                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = "商品代取件提醒")) {
+                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = "商品待取件提醒")) {
                         addNotificationAsCustomSms(context, text)
                     }
                 }
                 xhsPackage -> {
-                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = "订单代取件")) {
+                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = "订单待取件")) {
                         addNotificationAsCustomSms(context, text)
                     }
                 }
