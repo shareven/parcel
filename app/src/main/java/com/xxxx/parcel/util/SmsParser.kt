@@ -1,4 +1,5 @@
 package com.xxxx.parcel.util
+
 import android.util.Log
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -147,17 +148,19 @@ class SmsParser {
         // 2. 移除常见的干扰词
         val noiseWords = listOf("凭", "到", "位于", "放至", "送达", "放入", "取件", "请", "尽快", "及时")
         noiseWords.forEach { word ->
-            cleaned = cleaned.replace(word, "").trim()
+            val wordStr = word.toString() // 确保字符串类型
+            cleaned = cleaned.replace(wordStr, "").trim()
         }
         
         // 3. 移除各种括号和标点
         cleaned = cleaned.replace(Regex("""[『「【\(\[」』】\)\],，。！？!?|｜]"""), "").trim()
         
-        // 4. 移除开头的品牌名称
+        // 4. 移除开头的品牌名称 - 修复 startsWith 调用
         val expressBrands = listOf("近邻宝", "丰巢", "菜鸟", "中通", "顺丰", "韵达", "圆通", "申通", "京东")
         expressBrands.forEach { brand ->
-            if (cleaned.startsWith(brand)) {
-                cleaned = cleaned.substring(brand.length).trim()
+            val brandStr = brand.toString() // 明确的字符串转换
+            if (cleaned.isNotEmpty() && cleaned.startsWith(brandStr)) {
+                cleaned = cleaned.substring(brandStr.length).trim()
             }
         }
         
@@ -175,21 +178,25 @@ class SmsParser {
         
         var cleaned = address
         
-        // 特别处理：如果地址以奇怪的字符开头，尝试从原短信中重新提取
-        if (cleaned.startsWith(Regex("""[^\u4e00-\u9fa5a-zA-Z0-9]"""))) {
-            // 尝试从原短信中提取更准确的地址
-            val betterPattern = Pattern.compile("""([\u4e00-\u9fa5a-zA-Z0-9\s-]+?(?:驿站|快递柜|快递点|柜|室|号|栋|楼|单元|小区|学校|食堂|医院)[^，。！？]*)""")
-            val matcher = betterPattern.matcher(originalSms)
-            if (matcher.find()) {
-                val betterAddress = matcher.group(1) ?: ""
-                if (betterAddress.isNotEmpty()) {
-                    cleaned = betterAddress.trim()
-                    Log.d("SmsParser", "重新提取到更准确的地址: '$cleaned'")
+        // 修复 startsWith 调用，使用明确的字符串模式检查
+        if (cleaned.isNotEmpty()) {
+            val firstChar = cleaned.substring(0, 1)
+            val invalidStartPattern = Regex("""[^\u4e00-\u9fa5a-zA-Z0-9]""")
+            if (invalidStartPattern.matches(firstChar)) {
+                // 尝试从原短信中提取更准确的地址
+                val betterPattern = Pattern.compile("""([\u4e00-\u9fa5a-zA-Z0-9\s-]+?(?:驿站|快递柜|快递点|柜|室|号|栋|楼|单元|小区|学校|食堂|医院)[^，。！？]*)""")
+                val matcher = betterPattern.matcher(originalSms)
+                if (matcher.find()) {
+                    val betterAddress = matcher.group(1) ?: ""
+                    if (betterAddress.isNotEmpty()) {
+                        cleaned = betterAddress.trim()
+                        Log.d("SmsParser", "重新提取到更准确的地址: '$cleaned'")
+                    }
                 }
             }
         }
         
-        return cleaned.replace(Regex("^[^\\w\u4e00-\u9fa5]+"), "").trim() // 移除开头的非中文字符
+        return cleaned.replace(Regex("""^[^\\w\u4e00-\u9fa5]+"""), "").trim()
     }
 
     /**
@@ -199,13 +206,13 @@ class SmsParser {
         if (code.length < 4) return false
         
         // 排除纯数字且长度超过8位的（可能是电话号码或日期）
-        if (code.matches(Regex("""^\d{9,}$"""))) return false
+        if (code.matches(Regex("""^\\d{9,}$"""))) return false
         
         // 排除纯数字且长度小于4位的
-        if (code.matches(Regex("""^\d{1,3}$"""))) return false
+        if (code.matches(Regex("""^\\d{1,3}$"""))) return false
         
         // 排除常见的日期格式
-        if (code.matches(Regex("""^\d{4}[-/]\d{1,2}[-/]\d{1,2}$"""))) return false
+        if (code.matches(Regex("""^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}$"""))) return false
         
         // 排除明显不是取件码的内容
         if (code.contains(Regex("""[年月日时分秒]"""))) return false
@@ -221,7 +228,7 @@ class SmsParser {
         
         return code
             .replace(Regex("""[『「【\(\[」』】\)\]]"""), "")  // 移除所有括号
-            .replace(Regex("""\s+"""), "")  // 移除所有空格
+            .replace(Regex("""\\s+"""), "")  // 移除所有空格
             .trim()
     }
 
