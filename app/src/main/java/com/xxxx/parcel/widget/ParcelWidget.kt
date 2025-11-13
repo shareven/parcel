@@ -8,14 +8,22 @@ import android.content.Intent
 import android.widget.RemoteViews
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
+import com.xxxx.parcel.util.getCustomList
+import com.xxxx.parcel.util.getCustomSmsList
+import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.isSameDay
+import com.xxxx.parcel.util.SmsUtil
+import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
+import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 
 class ParcelWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
 
-        if ("miui.appwidget.action.APPWIDGET_UPDATE".equals(intent.getAction())) {
+        if ("miui.appwidget.action.APPWIDGET_UPDATE".equals(intent.getAction()) ||
+            "com.xxxx.parcel.CUSTOM_SMS_ADDED".equals(intent.getAction())) {
 
                 // 获取 ParcelViewModel 实例
             val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
@@ -95,88 +103,101 @@ class ParcelWidget : AppWidgetProvider() {
             }
         }
 
-        private fun updateSingleAppWidget(
+        fun updateAllByProvider(
+            context: Context,
+            providerClass: Class<out AppWidgetProvider>,
+            viewModel: ParcelViewModel?
+        ) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(
+                android.content.ComponentName(context, providerClass)
+            )
+            for (id in ids) {
+                updateSingleAppWidget(context, manager, id, viewModel)
+            }
+        }
+
+        fun updateSingleAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
             viewModel: ParcelViewModel?
         ) {
-            // 从 ViewModel 获取最新的取件码信息
             var total = 0
-            viewModel?.parcelsData?.value?.forEach {
-                total += it.num
-            }
-
-            val latestMessage = viewModel?.parcelsData?.value?.firstOrNull()
-            var address1 = latestMessage?.address ?: ""
+            var address1 = ""
             var codeList1 = ""
-            if (latestMessage != null && latestMessage.num > 0) {
-                codeList1 = latestMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
-                    .joinToString(separator = "\n")
-                address1 += "（${latestMessage.num}）"
-            } else {
-                address1 = ""
-                codeList1 = ""
-            }
-
-            val secondMessage = viewModel?.parcelsData?.value?.getOrNull(1)
-            var address2 = secondMessage?.address ?: ""
+            var address2 = ""
             var codeList2 = ""
-            if (secondMessage != null && secondMessage.num > 0) {
-                codeList2 = secondMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
-                    .joinToString(separator = "\n")
-                address2 += "（${secondMessage.num}）"
-            } else {
-                address2 = ""
-                codeList2 = ""
-            }
-
-            val thirdMessage = viewModel?.parcelsData?.value?.getOrNull(2)
-            var address3 = thirdMessage?.address ?: ""
+            var address3 = ""
             var codeList3 = ""
-            if (thirdMessage != null && thirdMessage.num > 0) {
-                codeList3 = thirdMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
-                    .joinToString(separator = "\n")
-                address3 += "（${thirdMessage.num}）"
-            } else {
-                address3 = ""
-                codeList3 = ""
-            }
-
-            val fourthMessage = viewModel?.parcelsData?.value?.getOrNull(3)
-            var address4 = fourthMessage?.address ?: ""
+            var address4 = ""
             var codeList4 = ""
-            if (fourthMessage != null && fourthMessage.num > 0) {
-                codeList4 = fourthMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
-                    .joinToString(separator = "\n")
-                address4 += "（${fourthMessage.num}）"
-            } else {
-                address4 = ""
-                codeList4 = ""
-            }
-
-            val fifthMessage = viewModel?.parcelsData?.value?.getOrNull(4)
-            var address5 = fifthMessage?.address ?: ""
+            var address5 = ""
             var codeList5 = ""
-            if (fifthMessage != null && fifthMessage.num > 0) {
-                codeList5 = fifthMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
-                    .joinToString(separator = "\n")
-                address5 += "（${fifthMessage.num}）"
-            } else {
-                address5 = ""
-                codeList5 = ""
-            }
-
-            val sixthMessage = viewModel?.parcelsData?.value?.getOrNull(5)
-            var address6 = sixthMessage?.address ?: ""
+            var address6 = ""
             var codeList6 = ""
-            if (sixthMessage != null && sixthMessage.num > 0) {
-                codeList6 = sixthMessage.smsDataList.filter { !it.isCompleted }.map { it.code }
-                    .joinToString(separator = "\n")
-                address6 += "（${sixthMessage.num}）"
+
+            val parcels = viewModel?.parcelsData?.value
+            if (parcels != null && parcels.isNotEmpty()) {
+                total = parcels.sumOf { it.num }
+                fun fill(idx: Int, setAddr: (String)->Unit, setCodes: (String)->Unit) {
+                    val item = parcels.getOrNull(idx)
+                    if (item != null && item.num > 0) {
+                        val codes = item.smsDataList.filter { !it.isCompleted }.map { it.code }.joinToString("\n")
+                        setAddr(item.address + "（${item.num}）")
+                        setCodes(codes)
+                    } else {
+                        setAddr("")
+                        setCodes("")
+                    }
+                }
+                fill(0, { address1 = it }, { codeList1 = it })
+                fill(1, { address2 = it }, { codeList2 = it })
+                fill(2, { address3 = it }, { codeList3 = it })
+                fill(3, { address4 = it }, { codeList4 = it })
+                fill(4, { address5 = it }, { codeList5 = it })
+                fill(5, { address6 = it }, { codeList6 = it })
             } else {
-                address6 = ""
-                codeList6 = ""
+                val parser = SmsParser()
+                getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
+                getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
+                getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
+                val completedIds = getCustomList(context, "completedIds")
+                val daysFilter = getIndex(context)
+                val mergedList = (SmsUtil.readSmsByTimeFilter(context, daysFilter) + getCustomSmsList(context))
+                val grouped = mutableMapOf<String, MutableList<Triple<String, Long, String>>>()
+                mergedList.forEach { sms ->
+                    val r = parser.parseSms(sms.body)
+                    if (r.success) {
+                        val addr = r.address
+                        val code = r.code
+                        val list = grouped.getOrPut(addr) { mutableListOf() }
+                        val sameDaySame = list.any { it.first == code && isSameDay(it.second, sms.timestamp) }
+                        if (!sameDaySame) list.add(Triple(code, sms.timestamp, sms.id))
+                    }
+                }
+                val ordered = grouped.map { (addr, codes) ->
+                    val effectiveCodes = codes.filterNot { triple -> completedIds.contains(triple.third) }
+                    addr to effectiveCodes
+                }.sortedByDescending { it.second.size }
+
+                total = ordered.sumOf { it.second.size }
+                fun fill2(idx: Int, setAddr: (String)->Unit, setCodes: (String)->Unit) {
+                    val item = ordered.getOrNull(idx)
+                    if (item != null && item.second.isNotEmpty()) {
+                        setAddr(item.first + "（${item.second.size}）")
+                        setCodes(item.second.joinToString("\n") { it.first })
+                    } else {
+                        setAddr("")
+                        setCodes("")
+                    }
+                }
+                fill2(0, { address1 = it }, { codeList1 = it })
+                fill2(1, { address2 = it }, { codeList2 = it })
+                fill2(2, { address3 = it }, { codeList3 = it })
+                fill2(3, { address4 = it }, { codeList4 = it })
+                fill2(4, { address5 = it }, { codeList5 = it })
+                fill2(5, { address6 = it }, { codeList6 = it })
             }
 
 

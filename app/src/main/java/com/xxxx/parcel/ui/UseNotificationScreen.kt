@@ -4,7 +4,12 @@ import android.content.Intent
 import android.provider.Settings
 import android.content.ComponentName
 import android.content.Context
-import com.xxxx.parcel.notification.ParcelNotificationListenerService
+import android.os.Build
+import android.os.PowerManager
+import android.service.notification.NotificationListenerService
+import android.service.quicksettings.TileService
+import com.xxxx.parcel.service.ParcelNotificationListenerService
+import com.xxxx.parcel.service.NotificationAccessTileService
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +90,7 @@ fun UseNotificationScreen(navController: NavController) {
 
     var mainEnabled by remember { mutableStateOf(getMainSwitch(context)) }
     var hasPermission by remember { mutableStateOf(isNotificationAccessGranted(context)) }
+    var batteryUnrestricted by remember { mutableStateOf(isBatteryOptimizationIgnored(context)) }
 
     var pddEnabled by remember { mutableStateOf(getAppSwitch(context, pddPackage)) }
     var xhsEnabled by remember { mutableStateOf(getAppSwitch(context, xhsPackage)) }
@@ -92,6 +98,7 @@ fun UseNotificationScreen(navController: NavController) {
 
     LaunchedEffect(Unit) {
         hasPermission = isNotificationAccessGranted(context)
+        batteryUnrestricted = isBatteryOptimizationIgnored(context)
     }
 
     // 页面恢复时重新检测（从系统设置返回后）
@@ -100,6 +107,7 @@ fun UseNotificationScreen(navController: NavController) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 hasPermission = isNotificationAccessGranted(context)
+                batteryUnrestricted = isBatteryOptimizationIgnored(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -147,15 +155,35 @@ fun UseNotificationScreen(navController: NavController) {
                         onCheckedChange = { checked ->
                             mainEnabled = checked
                             setMainSwitch(context, checked)
+                            // 切换页面主开关后，立即刷新通知使用权状态与磁贴展示
+                            try {
+                                // 刷新快速设置磁贴的显示状态
+                                TileService.requestListeningState(
+                                    context,
+                                    ComponentName(context, NotificationAccessTileService::class.java)
+                                )
+                            } catch (_: Exception) {}
+
                             if (checked && !hasPermission) {
-                                context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                                openNotificationAccessSettings(context)
+                            } else if (checked && hasPermission) {
+                                // 已授权且开启主开关时，主动请求系统重新绑定通知监听服务
+                                try {
+                                    NotificationListenerService.requestRebind(
+                                        ComponentName(context, ParcelNotificationListenerService::class.java)
+                                    )
+                                } catch (_: Exception) {}
                             }
+
+                            // 重新读取一次授权状态以刷新页面提示
+                            hasPermission = isNotificationAccessGranted(context)
+                            batteryUnrestricted = isBatteryOptimizationIgnored(context)
                         }
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "遇到系统杀进程，添加自启动，耗电管理不限制后台；还不行就在收到通知后，手动启动一下app，会自动读取保存取件码通知；还不行就卸载重装app",
+                    text = "如果还遇到系统杀进程，可以在通知栏添加名为 取件码 的开关，下拉通知便会重启。还可以任务栏锁定app，添加自启动，耗电管理不限制后台；还不行就在收到通知后，手动启动一下app，会自动读取保存取件码通知；还不行就卸载重装app",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -172,9 +200,29 @@ fun UseNotificationScreen(navController: NavController) {
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(onClick = {
-                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                            openNotificationAccessSettings(context)
                         }) {
                             Text("去授权", color = Color(0XFF6200EE))
+                        }
+                    }
+                }
+
+                if (mainEnabled && !batteryUnrestricted) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "建议将耗电管理设置为不限制，点击前往设置",
+                            color = Color(0xFFB00020),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = {
+                            openIgnoreBatteryOptimizationSettings(context)
+                        }) {
+                            Text("去设置", color = Color(0XFF6200EE))
                         }
                     }
                 }
@@ -389,12 +437,33 @@ fun AppListenItemMulti(
     }
 }
 
-// 本地存储相关函数已迁移至 com.xxxx.parcel.util.save_data
 
 fun isNotificationAccessGranted(context: Context): Boolean {
     val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
     if (flat.isNullOrBlank()) return false
     val full = ComponentName(context, ParcelNotificationListenerService::class.java).flattenToString()
-    val short = "${context.packageName}/.notification.ParcelNotificationListenerService"
+    val short = "${context.packageName}/.service.ParcelNotificationListenerService"
     return flat.split(":").any { it == full || it == short }
+}
+
+fun openNotificationAccessSettings(context: Context) {
+    val cn = ComponentName(context, ParcelNotificationListenerService::class.java)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
+            putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, cn.flattenToString())
+        }
+        context.startActivity(intent)
+    } else {
+        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    }
+}
+
+fun isBatteryOptimizationIgnored(context: Context): Boolean {
+    val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    return pm.isIgnoringBatteryOptimizations(context.packageName)
+}
+
+fun openIgnoreBatteryOptimizationSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+    context.startActivity(intent)
 }

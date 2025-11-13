@@ -12,6 +12,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,6 +44,7 @@ import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.util.getCustomSmsByTimeFilter
+import com.xxxx.parcel.util.getMainSwitch
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
 import com.xxxx.parcel.widget.ParcelWidgetLarge
@@ -52,6 +55,7 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Build
 import com.xxxx.parcel.widget.ParcelWidgetXL
+import com.xxxx.parcel.service.ParcelNotificationListenerService
 
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -200,6 +204,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         // 注册接收“自定义短信已添加”的广播，统一触发 UI 刷新
         registerCustomSmsAddedReceiver()
+
+        // 应用启动后尝试重新绑定通知监听服务，避免重启后不工作
+        rebindNotificationListenerIfNeeded()
     }
 
     private fun registerCustomSmsAddedReceiver() {
@@ -218,6 +225,31 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             @Suppress("DEPRECATION")
             registerReceiver(customSmsReceiver, filter)
         }
+    }
+
+    private fun rebindNotificationListenerIfNeeded() {
+        try {
+            val hasAccess = hasNotificationAccess(this)
+            val mainEnabled = getMainSwitch(this)
+            if (hasAccess && mainEnabled) {
+                NotificationListenerService.requestRebind(
+                    ComponentName(this, ParcelNotificationListenerService::class.java)
+                )
+                Log.d("MainActivity", "Requested rebind on app start")
+            } else {
+                Log.d("MainActivity", "Skip rebind: hasAccess=$hasAccess mainEnabled=$mainEnabled")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Request rebind failed: ${e.message}")
+        }
+    }
+
+    private fun hasNotificationAccess(context: Context): Boolean {
+        val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+        if (flat.isNullOrBlank()) return false
+        val full = ComponentName(context, ParcelNotificationListenerService::class.java).flattenToString()
+        val short = "${context.packageName}/.service.ParcelNotificationListenerService"
+        return flat.split(":").any { it == full || it == short }
     }
 
     override fun onRequestPermissionsResult(

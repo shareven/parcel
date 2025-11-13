@@ -9,6 +9,14 @@
 
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- 设备重启后接收 BOOT_COMPLETED 以重新绑定通知监听服务 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <!-- 添加存储权限 -->
     <uses-permission
@@ -30,13 +38,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Parcel"
         tools:targetApi="31">
-        <!-- <receiver
+        <receiver
             android:name=".receiver.SmsReceiver"
             android:exported="true">
             <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
-        </receiver> -->
+        </receiver>
         <receiver
             android:name=".widget.ParcelWidget"
             android:exported="true">
@@ -45,6 +53,7 @@
                 android:resource="@xml/parcel_widget_info" />
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.xxxx.parcel.CUSTOM_SMS_ADDED" />
             </intent-filter>
         </receiver>
         <receiver
@@ -56,6 +65,7 @@
             android:resource="@xml/parcel_widget_large_info" />
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.xxxx.parcel.CUSTOM_SMS_ADDED" />
             </intent-filter>
         </receiver>
 
@@ -67,6 +77,7 @@
                 android:resource="@xml/parcel_widget_xl_info" />
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.xxxx.parcel.CUSTOM_SMS_ADDED" />
             </intent-filter>
         </receiver>
 
@@ -96,6 +107,7 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <!--                //MIUI展现刷新-->
                 <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.xxxx.parcel.CUSTOM_SMS_ADDED" />
             </intent-filter>
         </receiver>
 
@@ -125,12 +137,13 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <!--                //MIUI展现刷新-->
                 <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.xxxx.parcel.CUSTOM_SMS_ADDED" />
             </intent-filter>
         </receiver>
 
         <!-- 通知监听服务，用于从第三方APP通知中提取取件码/短信内容 -->
         <service
-            android:name=".notification.ParcelNotificationListenerService"
+            android:name=".service.ParcelNotificationListenerService"
             android:label="Parcel Notification Service"
             android:enabled="true"
             android:exported="false"
@@ -139,6 +152,35 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- 快速设置磁贴：通知监听开关入口 -->
+        <service
+            android:name=".service.NotificationAccessTileService"
+            android:label="@string/app_name"
+            android:icon="@drawable/ic_notification"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".service.SmsSyncService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|shortService" />
+
+
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.USER_UNLOCKED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
 
         <!-- 小部件服务 -->
         <!--        <service-->
