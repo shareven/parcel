@@ -72,6 +72,7 @@ import com.xxxx.parcel.util.getAppTitle
 import com.xxxx.parcel.util.setAppTitle
 import com.xxxx.parcel.util.getAppTitles
 import com.xxxx.parcel.util.setAppTitles
+import com.xxxx.parcel.util.ThirdPartyDefaults
 
 
 
@@ -80,19 +81,22 @@ import com.xxxx.parcel.util.setAppTitles
 fun UseNotificationScreen(navController: NavController) {
     val context = LocalContext.current
 
-    val pddPackage = "com.xunmeng.pinduoduo"
-    val xhsPackage = "com.xingin.xhs"
-    val wechatPackage = "com.tencent.mm"
+    val pddPackage = ThirdPartyDefaults.PDD_PACKAGE
+    val douyinPackage = ThirdPartyDefaults.DOUYIN_PACKAGE
+    val xhsPackage = ThirdPartyDefaults.XHS_PACKAGE
+    val wechatPackage = ThirdPartyDefaults.WECHAT_PACKAGE
 
-    var pddTitle by remember { mutableStateOf(getAppTitle(context, pddPackage).ifBlank { "商品待取件提醒" }) }
-    var xhsTitle by remember { mutableStateOf(getAppTitle(context, xhsPackage).ifBlank { "订单待取件" }) }
-    var wechatTitles by remember { mutableStateOf(getAppTitles(context, wechatPackage, count = 5, defaultFirst = "老婆")) }
+    var pddTitle by remember { mutableStateOf(getAppTitle(context, pddPackage).ifBlank { ThirdPartyDefaults.defaultTitleFor(pddPackage) }) }
+    var douyinTitle by remember { mutableStateOf(getAppTitle(context, douyinPackage).ifBlank { ThirdPartyDefaults.defaultTitleFor(douyinPackage) }) }
+    var xhsTitle by remember { mutableStateOf(getAppTitle(context, xhsPackage).ifBlank { ThirdPartyDefaults.defaultTitleFor(xhsPackage) }) }
+    var wechatTitles by remember { mutableStateOf(getAppTitles(context, wechatPackage, count = 5, defaultFirst = ThirdPartyDefaults.WECHAT_DEFAULT_FIRST)) }
 
     var mainEnabled by remember { mutableStateOf(getMainSwitch(context)) }
     var hasPermission by remember { mutableStateOf(isNotificationAccessGranted(context)) }
     var batteryUnrestricted by remember { mutableStateOf(isBatteryOptimizationIgnored(context)) }
 
     var pddEnabled by remember { mutableStateOf(getAppSwitch(context, pddPackage)) }
+    var douyinEnabled by remember { mutableStateOf(getAppSwitch(context, douyinPackage)) }
     var xhsEnabled by remember { mutableStateOf(getAppSwitch(context, xhsPackage)) }
     var wechatEnabled by remember { mutableStateOf(getAppSwitch(context, wechatPackage)) }
 
@@ -260,6 +264,34 @@ fun UseNotificationScreen(navController: NavController) {
                                 onTitleChange = { new ->
                                     pddTitle = new
                                     setAppTitle(context, pddPackage, new)
+                                },
+                                enabled = controlsEnabled
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            AppListenItem(
+                                appName = "抖音",
+                                packageName = douyinPackage,
+                                titleText = douyinTitle,
+                                checked = douyinEnabled,
+                                onCheckedChange = { checked ->
+                                    if (controlsEnabled) {
+                                        douyinEnabled = checked
+                                        setAppSwitch(context, douyinPackage, checked)
+                                    }
+                                },
+                                onTitleChange = { new ->
+                                    douyinTitle = new
+                                    setAppTitle(context, douyinPackage, new)
                                 },
                                 enabled = controlsEnabled
                             )

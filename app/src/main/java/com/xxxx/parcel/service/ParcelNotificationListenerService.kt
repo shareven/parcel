@@ -21,12 +21,14 @@ import com.xxxx.parcel.util.isMainSwitchEnabled
 import com.xxxx.parcel.util.isAppSwitchEnabled
 import com.xxxx.parcel.util.getTitleForPackage
 import com.xxxx.parcel.util.getTitlesForPackage
+import com.xxxx.parcel.util.ThirdPartyDefaults
 
 class ParcelNotificationListenerService : NotificationListenerService() {
 
-    private val pddPackage = "com.xunmeng.pinduoduo"
-    private val xhsPackage = "com.xingin.xhs"
-    private val wechatPackage = "com.tencent.mm"
+    private val pddPackage = ThirdPartyDefaults.PDD_PACKAGE
+    private val douyinPackage = ThirdPartyDefaults.DOUYIN_PACKAGE
+    private val xhsPackage = ThirdPartyDefaults.XHS_PACKAGE
+    private val wechatPackage = ThirdPartyDefaults.WECHAT_PACKAGE
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -85,19 +87,24 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             val text = extractNotificationText(extras)
             when (pkg) {
                 pddPackage -> {
-                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = "商品待取件提醒")) {
+                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(pddPackage))) {
+                        addNotificationAsCustomSms(context, text)
+                    }
+                }
+                douyinPackage -> {
+                    if (isAppSwitchEnabled(context, douyinPackage) && title == getTitleForPackage(context, douyinPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(douyinPackage))) {
                         addNotificationAsCustomSms(context, text)
                     }
                 }
                 xhsPackage -> {
-                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = "订单待取件")) {
+                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(xhsPackage))) {
                         addNotificationAsCustomSms(context, text)
                     }
                 }
                 wechatPackage -> {
                     // 微信通知标题通常为会话名；
                     if (isAppSwitchEnabled(context, wechatPackage)) {
-                        val titles = getTitlesForPackage(context, wechatPackage, count = 5, defaultFirst = "老婆")
+                        val titles = getTitlesForPackage(context, wechatPackage, count = 5, defaultFirst = ThirdPartyDefaults.WECHAT_DEFAULT_FIRST)
                         val normalizedSaved = titles.filter { it.isNotBlank() }.map { it.trim() }
                         val candidates = listOf(title, conversationTitle, subText, sbn.notification.tickerText?.toString() ?: "")
                             .map { it.trim() }
