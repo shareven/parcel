@@ -12,22 +12,22 @@ import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget.Companion
+import com.xxxx.parcel.util.getCustomList
+import com.xxxx.parcel.util.getCustomSmsList
+import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.isSameDay
 
 class ParcelWidgetLarge : AppWidgetProvider() {
         override fun onReceive(context: Context, intent: Intent) {
 
-        if ("miui.appwidget.action.APPWIDGET_UPDATE".equals(intent.getAction())) {
+        if ("miui.appwidget.action.APPWIDGET_UPDATE".equals(intent.getAction()) ||
+            "com.xxxx.parcel.CUSTOM_SMS_ADDED".equals(intent.getAction())) {
 
                 // 获取 ParcelViewModel 实例
             val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
                 ViewModelProvider(it)[ParcelViewModel::class.java]
             }
-            updateAppWidget(
-                context,
-                AppWidgetManager.getInstance(context),
-                null,
-                viewModel
-            )
+            ParcelWidget.updateAllByProvider(context, ParcelWidgetLarge::class.java, viewModel)
 
         } else {
 
@@ -75,25 +75,14 @@ class ParcelWidgetLarge : AppWidgetProvider() {
         // 当最后一个小部件被移除时调用
     }
 
-    companion object {
+        companion object {
         internal fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int?,
             viewModel: ParcelViewModel?
         ) {
-            // 如果没有提供 appWidgetId，则更新所有实例
-            if (appWidgetId == null) {
-                val manager = AppWidgetManager.getInstance(context)
-                val ids = manager.getAppWidgetIds(
-                    android.content.ComponentName(context, ParcelWidgetLarge::class.java)
-                )
-                for (id in ids) {
-                    updateSingleAppWidget(context, manager, id, viewModel)
-                }
-            } else {
-                updateSingleAppWidget(context, appWidgetManager, appWidgetId, viewModel)
-            }
+            ParcelWidget.updateAllByProvider(context, ParcelWidgetLarge::class.java, viewModel)
         }
 
         private fun updateSingleAppWidget(
@@ -102,106 +91,7 @@ class ParcelWidgetLarge : AppWidgetProvider() {
             appWidgetId: Int,
             viewModel: ParcelViewModel?
         ) {
-            // 从 ViewModel 获取最新的取件码信息
-            var total =  0
-            viewModel?.parcelsData?.value?.forEach{
-                total+= it.num
-            }
-
-            val latestMessage = viewModel?.parcelsData?.value?.firstOrNull()
-            var address1 = latestMessage?.address ?: ""
-            var codeList1 = ""
-            if (latestMessage != null&&latestMessage.num>0) {
-                codeList1 = latestMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
-                address1 += "（${latestMessage.num}）"
-            } else {
-                address1 = ""
-                codeList1 = ""
-            }
-
-            val secondMessage = viewModel?.parcelsData?.value?.getOrNull(1)
-            var address2 = secondMessage?.address ?: ""
-            var codeList2 = ""
-            if (secondMessage != null&&secondMessage.num>0) {
-                codeList2 = secondMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
-                address2 += "（${secondMessage.num}）"
-            } else {
-                address2 = ""
-                codeList2 = ""
-            }
-             
-            val thirdMessage = viewModel?.parcelsData?.value?.getOrNull(2)
-            var address3 = thirdMessage?.address ?: ""
-            var codeList3 = ""
-            if (thirdMessage != null&&thirdMessage.num>0) {
-                codeList3 = thirdMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
-                address3 += "（${thirdMessage.num}）"
-            } else {
-                address3 = ""
-                codeList3 = ""
-            }
-
-            val fourthMessage = viewModel?.parcelsData?.value?.getOrNull(3)
-            var address4 = fourthMessage?.address ?: ""
-            var codeList4 = ""
-            if (fourthMessage != null&&fourthMessage.num>0) {
-                codeList4 = fourthMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
-                address4 += "（${fourthMessage.num}）"
-            } else {
-                address4 = ""
-                codeList4 = ""
-            }
-
-            val fifthMessage = viewModel?.parcelsData?.value?.getOrNull(4)
-            var address5 = fifthMessage?.address ?: ""
-            var codeList5 = ""
-            if (fifthMessage != null&&fifthMessage.num>0) {
-                codeList5 = fifthMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
-                address5 += "（${fifthMessage.num}）"
-            } else {
-                address5 = ""
-                codeList5 = ""
-            }
-
-            val sixthMessage = viewModel?.parcelsData?.value?.getOrNull(5)
-            var address6 = sixthMessage?.address ?: ""
-            var codeList6 = ""
-            if (sixthMessage != null&&sixthMessage.num>0) {
-                codeList6 = sixthMessage.smsDataList.filter{!it.isCompleted}.map{it.code}.joinToString(separator = "\n")
-                address6 += "（${sixthMessage.num}）"
-            } else {
-                address6 = ""
-                codeList6 = ""
-            }
-
-
-            // 构建 RemoteViews 对象
-            val views = RemoteViews(context.packageName, R.layout.widget_layout).apply {
-                setTextViewText(R.id.parcel_num, total.toString() )
-                setTextViewText(R.id.widget_address1, address1 )
-                setTextViewText(R.id.widget_codes1, codeList1)
-
-                setTextViewText(R.id.widget_address2, address2 )
-                setTextViewText(R.id.widget_codes2, codeList2)
-                setTextViewText(R.id.widget_address3, address3 )
-                setTextViewText(R.id.widget_codes3, codeList3)
-
-                setTextViewText(R.id.widget_address4, address4 )
-                setTextViewText(R.id.widget_codes4, codeList4)
-                setTextViewText(R.id.widget_address5, address5 )
-                setTextViewText(R.id.widget_codes5, codeList5)
-                setTextViewText(R.id.widget_address6, address6 )
-                setTextViewText(R.id.widget_codes6, codeList6)
-
-                // 设置点击意图
-                val intent = Intent(context, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                }
-                setOnClickPendingIntent(R.id.widget_container, PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            }
-
-            // 更新 App Widget
-            appWidgetManager.updateAppWidget(appWidgetId, views)
+            ParcelWidget.updateSingleAppWidget(context, appWidgetManager, appWidgetId, viewModel)
         }
-    }
+        }
 }

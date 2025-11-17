@@ -1,12 +1,18 @@
-package com.xxxx.parcel.notification
+package com.xxxx.parcel.service
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.app.Notification
+import android.content.ComponentName
 import android.os.Bundle
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.NotificationCompat
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.addCustomSms
 import com.xxxx.parcel.util.SmsParser
@@ -15,12 +21,57 @@ import com.xxxx.parcel.util.isMainSwitchEnabled
 import com.xxxx.parcel.util.isAppSwitchEnabled
 import com.xxxx.parcel.util.getTitleForPackage
 import com.xxxx.parcel.util.getTitlesForPackage
+import com.xxxx.parcel.util.ThirdPartyDefaults
 
 class ParcelNotificationListenerService : NotificationListenerService() {
 
-    private val pddPackage = "com.xunmeng.pinduoduo"
-    private val xhsPackage = "com.xingin.xhs"
-    private val wechatPackage = "com.tencent.mm"
+    private val pddPackage = ThirdPartyDefaults.PDD_PACKAGE
+    private val douyinPackage = ThirdPartyDefaults.DOUYIN_PACKAGE
+    private val xhsPackage = ThirdPartyDefaults.XHS_PACKAGE
+    private val wechatPackage = ThirdPartyDefaults.WECHAT_PACKAGE
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        return START_STICKY
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        val enabled = NotificationManagerCompat.getEnabledListenerPackages(applicationContext).contains(applicationContext.packageName)
+        if (enabled) {
+            val componentName = ComponentName(this, ParcelNotificationListenerService::class.java)
+            requestRebind(componentName)
+        }
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        try {
+            val channelId = "parcel_notify_channel"
+            if (Build.VERSION.SDK_INT >= 26) {
+                val mgr = getSystemService(NotificationManager::class.java)
+                if (mgr?.getNotificationChannel(channelId) == null) {
+                    val ch = NotificationChannel(
+                        channelId,
+                        "监听状态",
+                        NotificationManager.IMPORTANCE_MIN
+                    )
+                    ch.setShowBadge(false)
+                    ch.enableLights(false)
+                    ch.enableVibration(false)
+                    mgr?.createNotificationChannel(ch)
+                }
+            }
+            val notif = NotificationCompat.Builder(this, channelId)
+                .setOngoing(true)
+                .setSmallIcon(com.xxxx.parcel.R.drawable.ic_notification)
+                .setContentTitle("取件通知监听")
+                .setContentText("监听已开启")
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .build()
+            startForeground(1001, notif)
+        } catch (_: Exception) { }
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         try {
@@ -34,22 +85,26 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             val subText = extras.getString(Notification.EXTRA_SUB_TEXT) ?: ""
             // 更稳健地提取通知正文，避免因为空文本而提前返回
             val text = extractNotificationText(extras)
-
             when (pkg) {
                 pddPackage -> {
-                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = "商品待取件提醒")) {
+                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(pddPackage))) {
+                        addNotificationAsCustomSms(context, text)
+                    }
+                }
+                douyinPackage -> {
+                    if (isAppSwitchEnabled(context, douyinPackage) && title == getTitleForPackage(context, douyinPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(douyinPackage))) {
                         addNotificationAsCustomSms(context, text)
                     }
                 }
                 xhsPackage -> {
-                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = "订单待取件")) {
+                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(xhsPackage))) {
                         addNotificationAsCustomSms(context, text)
                     }
                 }
                 wechatPackage -> {
                     // 微信通知标题通常为会话名；
                     if (isAppSwitchEnabled(context, wechatPackage)) {
-                        val titles = getTitlesForPackage(context, wechatPackage, count = 5, defaultFirst = "老婆")
+                        val titles = getTitlesForPackage(context, wechatPackage, count = 5, defaultFirst = ThirdPartyDefaults.WECHAT_DEFAULT_FIRST)
                         val normalizedSaved = titles.filter { it.isNotBlank() }.map { it.trim() }
                         val candidates = listOf(title, conversationTitle, subText, sbn.notification.tickerText?.toString() ?: "")
                             .map { it.trim() }
@@ -154,5 +209,10 @@ class ParcelNotificationListenerService : NotificationListenerService() {
         if (!lastMsgText.isNullOrBlank()) return lastMsgText
 
         return ""
+    }
+
+    override fun onDestroy() {
+        try { stopForeground(true) } catch (_: Exception) { }
+        super.onDestroy()
     }
 }

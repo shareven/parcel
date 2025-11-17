@@ -299,3 +299,19 @@ fun getTitlesForPackage(context: Context, packageName: String, count: Int = 5, d
     val cleaned = titles.filter { it.isNotBlank() }
     return if (cleaned.isNotEmpty()) cleaned else if (defaultFirst != null && defaultFirst.isNotBlank()) listOf(defaultFirst) else emptyList()
 }
+
+object ThirdPartyDefaults {
+    const val PDD_PACKAGE = "com.xunmeng.pinduoduo"
+    const val DOUYIN_PACKAGE = "com.ss.android.ugc.aweme"
+    const val XHS_PACKAGE = "com.xingin.xhs"
+    const val WECHAT_PACKAGE = "com.tencent.mm"
+
+    fun defaultTitleFor(packageName: String): String = when (packageName) {
+        PDD_PACKAGE -> "商品待取件提醒"
+        DOUYIN_PACKAGE -> "包裹已放至自提柜/代收点"
+        XHS_PACKAGE -> "订单待取件"
+        else -> ""
+    }
+
+    const val WECHAT_DEFAULT_FIRST = "老婆"
+}

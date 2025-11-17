@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,6 +74,7 @@ fun AboutScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -91,17 +94,19 @@ fun AboutScreen(navController: NavController) {
                 Text(url, color = Color(0XFF6200EE) )
             }
             Spacer(modifier = Modifier.height(16.dp))
+            Text(getAppVersionName(context),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(bottom = 16.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "这是一个免费、开源、无广告、不联网，追求简洁的app，不收集任何个人信息。\n\n本app会自动解析收到的短信，并从中提取出地址和取件码信息，可以展示到桌面卡片上（支持暗色模式）。\n\n您可以添加自定义规则来改进解析效果。\n\n还支持监听第三方app通知，自动保存取件码消息，帮微信朋友取快递更方便了。\n\n桌面卡片添加：一般是藏在全部卡片-最底部的插件或者安卓小组件里面\n\n欢迎下载和使用！有问题或建议请提issue！",
+                text = "这是一个免费、开源、无广告、不联网，追求简洁的app，不收集任何个人信息。\n\n本app会自动解析收到的短信，并从中提取出地址和取件码信息，可以展示到桌面卡片上（支持暗色模式）。\n\n您可以添加自定义规则来改进解析效果。\n\n还支持监听第三方app通知，自动保存取件码消息，帮微信朋友取快递更方便了。\n\n打开监听通知权限，还能实现后台进程保活，实时更新桌面卡片。\n\n桌面卡片添加：一般是藏在全部卡片-最底部的插件或者安卓小组件里面\n\n欢迎下载和使用！有问题或建议请提issue！",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(getAppVersionName(context),
-                    style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(bottom = 16.dp))
 
         }
     }

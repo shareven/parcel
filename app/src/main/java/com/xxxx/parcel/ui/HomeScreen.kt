@@ -64,6 +64,10 @@ import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import kotlinx.coroutines.launch
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import android.os.Build
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -174,6 +178,20 @@ fun HomeScreen(
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("use_notification")
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("淘宝身份码") },
+                                onClick = {
+                                    showMenu = false
+                                    openTaobaoIdentityEntry(context)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("拼多多身份码") },
+                                onClick = {
+                                    showMenu = false
+                                    openPddIdentityEntry(context)
                                 }
                             )
                             DropdownMenuItem(
@@ -440,3 +458,52 @@ fun List(
         }
 }
 
+private fun openTaobaoIdentityEntry(context: Context) {
+    val pkg = "com.taobao.taobao"
+    val lastmile = "https://pages-fast.m.taobao.com/wow/z/uniapp/1100333/last-mile-fe/m-end-school-tab/home"
+   val candidates = listOf(
+        "tbopen://m.taobao.com/tbopen/index.html?h5Url=" + Uri.encode(lastmile),
+    )
+    for (u in candidates) {
+        try {
+            val i = Intent(Intent.ACTION_VIEW, Uri.parse(u))
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(i)
+            return
+        } catch (_: Exception) {}
+    }
+    try {
+        val i = Intent(Intent.ACTION_VIEW, Uri.parse(lastmile))
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        i.setClassName(pkg, "com.taobao.browser.BrowserActivity")
+        context.startActivity(i)
+        return
+    } catch (_: Exception) {}
+
+
+}
+
+private fun openPddIdentityEntry(context: Context) {
+    val pkg = "com.xunmeng.pinduoduo"
+    val schemes = listOf(
+        "pinduoduo://com.xunmeng.pinduoduo/mdkd/package",
+        "pinduoduo://com.xunmeng.pinduoduo/",
+        "pinduoduo://"
+    )
+    for (u in schemes) {
+        try {
+            val i = Intent(Intent.ACTION_VIEW, Uri.parse(u))
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(i)
+            return
+        } catch (_: Exception) {}
+    }
+    try {
+        val i = context.packageManager.getLaunchIntentForPackage(pkg)
+        if (i != null) {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(i)
+            return
+        }
+    } catch (_: Exception) {}
+}
