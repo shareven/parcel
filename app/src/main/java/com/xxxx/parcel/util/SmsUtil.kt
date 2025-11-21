@@ -65,9 +65,25 @@ class SmsUtil {
             } catch (e: Exception) {
                 Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_LONG).show()
                 Log.e("SmsUtil", "读取短信失败: ${e.message}")
+                addLog(context, "读取短信失败: ${e.message}")
             }
 
             return smsList
+        }
+
+        fun inboxContainsBodyRecent(context: Context, body: String, windowMs: Long = 5 * 60 * 1000L): Boolean {
+            return try {
+                val resolver = context.contentResolver
+                val uri: Uri = "content://sms/inbox".toUri()
+                val now = System.currentTimeMillis()
+                val selection = "date >= ? AND body = ?"
+                val args = arrayOf((now - windowMs).toString(), body)
+                resolver.query(uri, arrayOf("_id"), selection, args, null)?.use { c ->
+                    c.moveToFirst()
+                } ?: false
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 }

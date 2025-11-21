@@ -174,6 +174,13 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text("查看日志") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("logs")
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("监听第三方app通知") },
                                 onClick = {
                                     showMenu = false

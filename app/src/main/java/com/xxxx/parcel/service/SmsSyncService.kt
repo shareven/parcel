@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.xxxx.parcel.util.addLog
 
 class SmsSyncService : Service() {
     override fun onCreate() {
@@ -47,7 +48,8 @@ class SmsSyncService : Service() {
                     com.xxxx.parcel.widget.ParcelWidgetMiui.updateAppWidget(this, mgr, null, null)
                     com.xxxx.parcel.widget.ParcelWidgetLargeMiui.updateAppWidget(this, mgr, null, null)
                 } catch (_: Exception) {}
-            } catch (_: Exception) {}
+                addLog(this, "短信前台服务刷新完成并广播更新")
+            } catch (e: Exception) { addLog(this, "短信服务线程错误: ${e.message}") }
             try { stopForeground(true) } catch (_: Exception) {}
             stopSelf()
         }.start()

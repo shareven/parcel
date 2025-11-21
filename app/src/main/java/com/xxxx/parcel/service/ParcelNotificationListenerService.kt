@@ -22,6 +22,12 @@ import com.xxxx.parcel.util.isAppSwitchEnabled
 import com.xxxx.parcel.util.getTitleForPackage
 import com.xxxx.parcel.util.getTitlesForPackage
 import com.xxxx.parcel.util.ThirdPartyDefaults
+import com.xxxx.parcel.util.addLog
+import com.xxxx.parcel.util.SmsUtil
+import com.xxxx.parcel.util.getSystemSmsPackages
+import com.xxxx.parcel.util.getSystemSmsNotifySwitch
+import com.xxxx.parcel.util.getSystemSmsPackages
+import com.xxxx.parcel.util.getSystemSmsNotifySwitch
 
 class ParcelNotificationListenerService : NotificationListenerService() {
 
@@ -74,8 +80,8 @@ class ParcelNotificationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        val context = applicationContext
         try {
-            val context = applicationContext
             if (!isMainSwitchEnabled(context)) return
 
             val pkg = sbn.packageName ?: return
@@ -88,17 +94,19 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             when (pkg) {
                 pddPackage -> {
                     if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(pddPackage))) {
-                        addNotificationAsCustomSms(context, text)
+                        addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
+                        addLog(context, "PDD通知保存: ${text}")
                     }
                 }
                 douyinPackage -> {
                     if (isAppSwitchEnabled(context, douyinPackage) && title == getTitleForPackage(context, douyinPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(douyinPackage))) {
-                        addNotificationAsCustomSms(context, text)
+                        addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
+                        addLog(context, "抖音通知保存: ${text}")
                     }
                 }
                 xhsPackage -> {
                     if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(xhsPackage))) {
-                        addNotificationAsCustomSms(context, text)
+                        addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                     }
                 }
                 wechatPackage -> {
@@ -115,18 +123,21 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                             if (text.isNotBlank()) {
                                 // 仅当解析成功时才保存
                                 if (shouldSaveBasedOnParse(context, text)) {
-                                    addNotificationAsCustomSms(context, text)
+                                    addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
+                                    addLog(context, "微信通知保存: ${text}")
                                 } else {
                                     Log.d(
                                         "ParcelNotifyService",
                                         "WeChat matched titles but parse failed; content not saved"
                                     )
+                                    addLog(context, "微信通知解析失败: ${text}")
                                 }
                             } else {
                                 Log.d(
                                     "ParcelNotifyService",
                                     "WeChat matched titles but text empty; extras may be MessagingStyle"
                                 )
+                                addLog(context, "微信通知文本为空")
                             }
                         }
                         // 调试日志（帮助定位为何未匹配）
@@ -139,11 +150,19 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                     }
                 }
                 else -> {
-                    // ignore other packages
+                    val systemPkgs = getSystemSmsPackages(context)
+                    val systemEnabled = getSystemSmsNotifySwitch(context)
+                    if (systemEnabled && systemPkgs.contains(pkg)) {
+                        if (text.isNotBlank()) {
+                            addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
+
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
-            Log.e("ParcelNotifyService", "Error handling notification: ${e.message}")
+            Log.e("ParcelNotifyService", "通知处理出错: ${e.message}")
+            addLog(context,"ParcelNotifyService, 通知处理出错: ${e.message}")
         }
     }
 
@@ -161,8 +180,26 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             intent.setPackage(context.packageName)
             context.sendBroadcast(intent)
         } catch (e: Exception) {
-            Log.e("ParcelNotifyService", "Broadcast failed: ${e.message}")
+            Log.e("ParcelNotifyService", "广播失败: ${e.message}")
+            addLog(context, "ParcelNotifyService, 广播失败: ${e.message}")
         }
+    }
+
+    private fun addNotificationAsCustomSmsIfNotInInboxDelayed(context: Context, content: String) {
+        Thread {
+            try {
+                Thread.sleep(1000L)
+            } catch (_: Exception) {}
+            val exists = try {
+                SmsUtil.inboxContainsBodyRecent(context, content, 5 * 60 * 1000L)
+            } catch (_: Exception) { false }
+            if (!exists) {
+                addNotificationAsCustomSms(context, content)
+                addLog(context, "短信通知保存: ${content}")
+            } else {
+                addLog(context, "短信通知文本已在短信箱，跳过保存: ${content}")
+            }
+        }.start()
     }
 
     // 仅保存解析成功的内容（加载自定义规则）
@@ -183,7 +220,8 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             val result = parser.parseSms(content)
             result.success
         } catch (e: Exception) {
-            Log.e("ParcelNotifyService", "Parse check error: ${e.message}")
+            Log.e("ParcelNotifyService", "解析出错: ${e.message}")
+            addLog(context, "ParcelNotifyService 解析出错: ${e.message}")
             false
         }
     }

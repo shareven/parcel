@@ -40,6 +40,7 @@ import com.xxxx.parcel.util.removeCustomSms
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import java.net.URLEncoder
 import com.xxxx.parcel.util.dateToString
+import com.xxxx.parcel.util.isCustomSms
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,7 +129,7 @@ fun SuccessSmsScreen(
                             }
                             
                             // 只有自定义短信才显示删除按钮
-                            if (data.sms.body.contains("【自定义取件短信】")) {
+                            if (isCustomSms(data.sms)) {
                                 OutlinedButton(
                                     onClick = {
                                         removeCustomSms(context, data.sms.id)

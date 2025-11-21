@@ -56,6 +56,7 @@ import android.content.IntentFilter
 import android.os.Build
 import com.xxxx.parcel.widget.ParcelWidgetXL
 import com.xxxx.parcel.service.ParcelNotificationListenerService
+import com.xxxx.parcel.ui.LogScreen
 
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -379,6 +380,9 @@ fun App(
                 }
                 composable("use_notification") {
                     UseNotificationScreen(navController)
+                }
+                composable("logs") {
+                    LogScreen(navController)
                 }
             }
         }

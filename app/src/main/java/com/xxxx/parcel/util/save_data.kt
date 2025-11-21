@@ -2,8 +2,11 @@ package com.xxxx.parcel.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.isSameDay
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
@@ -314,4 +317,95 @@ object ThirdPartyDefaults {
     }
 
     const val WECHAT_DEFAULT_FIRST = "老婆"
+}
+
+@kotlinx.serialization.Serializable
+data class LogEntry(val timestamp: Long, val text: String)
+
+fun addLog(context: Context, text: String) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val arrStr = sp.getString("logs_json", null)
+    val list = try {
+        if (arrStr.isNullOrBlank()) mutableListOf<LogEntry>() else Json.decodeFromString<List<LogEntry>>(arrStr).toMutableList()
+    } catch (_: Exception) { mutableListOf() }
+    list.add(LogEntry(System.currentTimeMillis(), text))
+    sp.edit().putString("logs_json", Json.encodeToString(list)).apply()
+}
+
+fun getLogs(context: Context, dayMillis: Long? = null): List<LogEntry> {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val arrStr = sp.getString("logs_json", null) ?: return emptyList()
+    val list = try { Json.decodeFromString<List<LogEntry>>(arrStr) } catch (_: Exception) { emptyList() }
+    if (dayMillis == null) return list.sortedByDescending { it.timestamp }
+    val cal = java.util.Calendar.getInstance().apply {
+        timeInMillis = dayMillis
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    val start = cal.timeInMillis
+    cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+    val end = cal.timeInMillis
+    return list.filter { it.timestamp in start until end }.sortedByDescending { it.timestamp }
+}
+
+fun clearAllLogs(context: Context) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().remove("logs_json").apply()
+}
+
+fun hasCustomSameDayCode(context: Context, content: String): Boolean {
+    val parser = SmsParser()
+    getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
+    getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
+    getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
+    val r = parser.parseSms(content)
+    if (!r.success) return false
+    val recent = getCustomSmsByTimeFilter(context, 1)
+    return recent.any { sms ->
+        val body = sms.body.removePrefix("【自定义取件短信】")
+        val rr = parser.parseSms(body)
+        rr.success && rr.address == r.address && rr.code == r.code && isSameDay(sms.timestamp, System.currentTimeMillis())
+    }
+}
+
+fun hasCustomSameDayBody(context: Context, content: String): Boolean {
+    val recent = getCustomSmsByTimeFilter(context, 1)
+    return recent.any { sms ->
+        val body = sms.body.removePrefix("【自定义取件短信】")
+        body == content && isSameDay(sms.timestamp, System.currentTimeMillis())
+    }
+}
+
+fun getSystemSmsNotifySwitch(context: Context): Boolean {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    return sp.getBoolean("listen_system_sms_notify", true)
+}
+
+fun setSystemSmsNotifySwitch(context: Context, value: Boolean) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().putBoolean("listen_system_sms_notify", value).apply()
+}
+
+fun getSystemSmsPackages(context: Context): MutableSet<String> {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    return sp.getStringSet("system_sms_pkgs", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+}
+
+fun setSystemSmsPackages(context: Context, pkgs: Set<String>) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().putStringSet("system_sms_pkgs", pkgs.toSet()).apply()
+}
+
+fun addSystemSmsPackage(context: Context, pkg: String) {
+    val set = getSystemSmsPackages(context)
+    set.add(pkg)
+    setSystemSmsPackages(context, set)
+}
+
+fun removeSystemSmsPackage(context: Context, pkg: String) {
+    val set = getSystemSmsPackages(context)
+    set.remove(pkg)
+    setSystemSmsPackages(context, set)
 }

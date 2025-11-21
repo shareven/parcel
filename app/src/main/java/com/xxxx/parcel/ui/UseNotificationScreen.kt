@@ -50,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.alpha
@@ -73,7 +72,12 @@ import com.xxxx.parcel.util.setAppTitle
 import com.xxxx.parcel.util.getAppTitles
 import com.xxxx.parcel.util.setAppTitles
 import com.xxxx.parcel.util.ThirdPartyDefaults
-
+import com.xxxx.parcel.util.getSystemSmsNotifySwitch
+import com.xxxx.parcel.util.setSystemSmsNotifySwitch
+import com.xxxx.parcel.util.getSystemSmsPackages
+import com.xxxx.parcel.util.setSystemSmsPackages
+import android.net.Uri
+import androidx.compose.ui.Alignment
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,10 +103,32 @@ fun UseNotificationScreen(navController: NavController) {
     var douyinEnabled by remember { mutableStateOf(getAppSwitch(context, douyinPackage)) }
     var xhsEnabled by remember { mutableStateOf(getAppSwitch(context, xhsPackage)) }
     var wechatEnabled by remember { mutableStateOf(getAppSwitch(context, wechatPackage)) }
+    var systemSmsNotifyEnabled by remember { mutableStateOf(true) }
+    var systemSmsPkgs by remember { mutableStateOf(getSystemSmsPackages(context).toSet()) }
+    var smsCandidates by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var showSmsPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         hasPermission = isNotificationAccessGranted(context)
         batteryUnrestricted = isBatteryOptimizationIgnored(context)
+        try {
+            val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+            if (!sp.contains("listen_system_sms_notify")) {
+                setSystemSmsNotifySwitch(context, true)
+                systemSmsNotifyEnabled = true
+            } else {
+                systemSmsNotifyEnabled = getSystemSmsNotifySwitch(context)
+            }
+            val pm = context.packageManager
+            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:0000"))
+            val infos = pm.queryIntentActivities(intent, 0)
+            smsCandidates = infos.map { ri ->
+                val pkg = ri.activityInfo.packageName
+                val label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                pkg to label
+            }.distinctBy { it.first }
+            systemSmsPkgs = getSystemSmsPackages(context).toSet()
+        } catch (_: Exception) {}
     }
 
     // 页面恢复时重新检测（从系统设置返回后）
@@ -250,6 +276,114 @@ fun UseNotificationScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "网络短信通知", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                                Switch(
+                                    checked = systemSmsNotifyEnabled,
+                                    onCheckedChange = { checked ->
+                                        if (controlsEnabled) {
+                                            systemSmsNotifyEnabled = checked
+                                            setSystemSmsNotifySwitch(context, checked)
+                                        }
+                                    },
+                                    enabled = controlsEnabled
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "当有短信读取不到时，自动保存所选短信App的通知内容到自定义短信",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = if (systemSmsPkgs.isEmpty()) "未选择短信应用" else "已监听：" + systemSmsPkgs.joinToString(), style = MaterialTheme.typography.bodySmall)
+                                TextButton(onClick = { showSmsPicker = true }, enabled = controlsEnabled) { Text("点击选择短信App") }
+                            }
+                            if (showSmsPicker) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    smsCandidates.forEach { (pkg, label) ->
+                                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(text = label, modifier = Modifier.weight(1f))
+                                            Switch(
+                                                checked = systemSmsPkgs.contains(pkg),
+                                                onCheckedChange = { checked ->
+                                                    val updated = systemSmsPkgs.toMutableSet()
+                                                    if (checked) updated.add(pkg) else updated.remove(pkg)
+                                                    systemSmsPkgs = updated
+                                                    setSystemSmsPackages(context, updated)
+                                                },
+                                                enabled = controlsEnabled
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                    }
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                        TextButton(onClick = { showSmsPicker = false }) { Text("完成") }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            AppListenItemMulti(
+                                appName = "微信",
+                                packageName = wechatPackage,
+                                titles = wechatTitles,
+                                checked = wechatEnabled,
+                                onCheckedChange = { checked ->
+                                    if (controlsEnabled) {
+                                        wechatEnabled = checked
+                                        setAppSwitch(context, wechatPackage, checked)
+                                    }
+                                },
+                                onTitleChangeAt = { index, new ->
+                                    val updated = wechatTitles.toMutableList()
+                                    if (index in updated.indices) {
+                                        updated[index] = new
+                                        wechatTitles = updated
+                                        setAppTitles(context, wechatPackage, updated)
+                                    }
+                                },
+                                onAddTitle = {
+                                    val updated = wechatTitles.toMutableList()
+                                    updated.add("")
+                                    wechatTitles = updated
+                                    setAppTitles(context, wechatPackage, updated)
+                                },
+                                onRemoveTitleAt = { index ->
+                                    val updated = wechatTitles.toMutableList()
+                                    if (updated.size > 1 && index in updated.indices) {
+                                        updated.removeAt(index)
+                                        wechatTitles = updated
+                                        setAppTitles(context, wechatPackage, updated)
+                                    }
+                                },
+                                enabled = controlsEnabled
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
                             AppListenItem(
                                 appName = "拼多多",
                                 packageName = pddPackage,
@@ -328,49 +462,6 @@ fun UseNotificationScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            AppListenItemMulti(
-                                appName = "微信",
-                                packageName = wechatPackage,
-                                titles = wechatTitles,
-                                checked = wechatEnabled,
-                                onCheckedChange = { checked ->
-                                    if (controlsEnabled) {
-                                        wechatEnabled = checked
-                                        setAppSwitch(context, wechatPackage, checked)
-                                    }
-                                },
-                                onTitleChangeAt = { index, new ->
-                                    val updated = wechatTitles.toMutableList()
-                                    if (index in updated.indices) {
-                                        updated[index] = new
-                                        wechatTitles = updated
-                                        setAppTitles(context, wechatPackage, updated)
-                                    }
-                                },
-                                onAddTitle = {
-                                    val updated = wechatTitles.toMutableList()
-                                    updated.add("")
-                                    wechatTitles = updated
-                                    setAppTitles(context, wechatPackage, updated)
-                                },
-                                onRemoveTitleAt = { index ->
-                                    val updated = wechatTitles.toMutableList()
-                                    if (updated.size > 1 && index in updated.indices) {
-                                        updated.removeAt(index)
-                                        wechatTitles = updated
-                                        setAppTitles(context, wechatPackage, updated)
-                                    }
-                                },
-                                enabled = controlsEnabled
-                            )
-                        }
-                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
