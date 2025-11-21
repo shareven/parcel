@@ -33,6 +33,8 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -51,7 +53,7 @@ fun LogScreen(navController: NavController) {
     val selectedDay = remember { mutableStateOf<Long?>(null) }
     val sdfDay = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
     val sdfTime = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-    val logs = getLogs(context, selectedDay.value)
+    var logs by remember { mutableStateOf(getLogs(context, selectedDay.value)) }
     val clipboard = LocalClipboardManager.current
 
     Scaffold(
@@ -64,7 +66,7 @@ fun LogScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    TextButton(onClick = { clearAllLogs(context) }) { Text("清除全部") }
+                     TextButton(onClick = { clearAllLogs(context); logs = emptyList() }) { Text("清除全部") }
                 }
             )
         }
@@ -91,7 +93,7 @@ fun LogScreen(navController: NavController) {
                         cal.get(Calendar.DAY_OF_MONTH)
                     )
                     dialog.show()
-                }) { Text("选择日期") }
+                }) { Text("选择日期") } 
                 TextButton(onClick = { selectedDay.value = null }) { Text("显示全部") }
                 TextButton(onClick = {
                     val content = logs.joinToString(separator = "\n\n") { entry ->
@@ -102,7 +104,8 @@ fun LogScreen(navController: NavController) {
                     clipboard.setText(AnnotatedString(content))
                     Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                 }) { Text("复制") }
-
+               
+               
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -112,15 +115,19 @@ fun LogScreen(navController: NavController) {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
-                    SelectionContainer {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            logs.forEach { entry ->
-                                val dayStr = sdfDay.format(Date(entry.timestamp))
-                                val timeStr = sdfTime.format(Date(entry.timestamp))
-                                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                                    Text(text = "$dayStr $timeStr", style = MaterialTheme.typography.bodyMedium)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = entry.text, style = MaterialTheme.typography.bodyLarge)
+                    if (logs.isEmpty()) {
+                        Text(text = "暂无日志", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        SelectionContainer {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                logs.forEach { entry ->
+                                    val dayStr = sdfDay.format(Date(entry.timestamp))
+                                    val timeStr = sdfTime.format(Date(entry.timestamp))
+                                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                        Text(text = "$dayStr $timeStr", style = MaterialTheme.typography.bodyMedium)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = entry.text, style = MaterialTheme.typography.bodyLarge)
+                                    }
                                 }
                             }
                         }
@@ -128,5 +135,8 @@ fun LogScreen(navController: NavController) {
                 }
             }
         }
+    }
+    androidx.compose.runtime.LaunchedEffect(selectedDay.value) {
+        logs = getLogs(context, selectedDay.value)
     }
 }

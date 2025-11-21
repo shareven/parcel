@@ -130,7 +130,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                                         "ParcelNotifyService",
                                         "WeChat matched titles but parse failed; content not saved"
                                     )
-                                    addLog(context, "微信通知解析失败: ${text}")
+
                                 }
                             } else {
                                 Log.d(
@@ -195,9 +195,8 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             } catch (_: Exception) { false }
             if (!exists) {
                 addNotificationAsCustomSms(context, content)
-                addLog(context, "短信通知保存: ${content}")
             } else {
-                addLog(context, "短信通知文本已在短信箱，跳过保存: ${content}")
+                addLog(context, "通知文本已在短信箱，跳过保存: ${content}")
             }
         }.start()
     }
