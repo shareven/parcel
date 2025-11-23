@@ -99,7 +99,9 @@ fun LogScreen(navController: NavController) {
                     val content = logs.joinToString(separator = "\n\n") { entry ->
                         val dayStr = sdfDay.format(Date(entry.timestamp))
                         val timeStr = sdfTime.format(Date(entry.timestamp))
-                        "$dayStr $timeStr\n${entry.text}"
+                        val ver = entry.version.ifBlank { "" }
+                                   
+                        "${if (ver.isNotBlank()) "[v$ver] " else ""}$dayStr $timeStr\n${entry.text}"
                     }
                     clipboard.setText(AnnotatedString(content))
                     Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
