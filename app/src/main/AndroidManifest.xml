@@ -2,6 +2,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_MESSAGING" />
+        </intent>
+        <package android:name="com.android.mms" />
+        <package android:name="com.google.android.apps.messaging" />
+        <package android:name="com.miui.mms" />
+        <package android:name="com.huawei.message" />
+        <package android:name="com.samsung.android.messaging" />
+        <package android:name="com.coloros.mms" />
+        <package android:name="com.oneplus.mms" />
+    </queries>
+
     <!-- 添加短信权限 -->
     <uses-feature
         android:name="android.hardware.telephony"

@@ -2,6 +2,7 @@ package com.xxxx.parcel.ui
 
 import android.content.Intent
 import android.provider.Settings
+import android.provider.Telephony
 import android.content.ComponentName
 import android.content.Context
 import android.os.Build
@@ -37,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -107,6 +109,7 @@ fun UseNotificationScreen(navController: NavController) {
     var systemSmsPkgs by remember { mutableStateOf(getSystemSmsPackages(context).toSet()) }
     var smsCandidates by remember { mutableStateOf(listOf<Pair<String, String>>()) }
     var showSmsPicker by remember { mutableStateOf(false) }
+    var selectedSmsPkg by remember { mutableStateOf(getSystemSmsPackages(context).firstOrNull()) }
 
     LaunchedEffect(Unit) {
         hasPermission = isNotificationAccessGranted(context)
@@ -127,7 +130,15 @@ fun UseNotificationScreen(navController: NavController) {
                 val label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
                 pkg to label
             }.distinctBy { it.first }
+            if (smsCandidates.isEmpty()) {
+                val defaultPkg = Telephony.Sms.getDefaultSmsPackage(context)
+                if (defaultPkg != null) {
+                    val label = runCatching { pm.getApplicationLabel(pm.getApplicationInfo(defaultPkg, 0)).toString() }.getOrElse { defaultPkg }
+                    smsCandidates = listOf(defaultPkg to label)
+                }
+            }
             systemSmsPkgs = getSystemSmsPackages(context).toSet()
+            selectedSmsPkg = systemSmsPkgs.firstOrNull()
         } catch (_: Exception) {}
     }
 
@@ -244,7 +255,7 @@ fun UseNotificationScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "建议将耗电管理设置为不限制，点击前往设置",
+                            text = "建议将耗电管理设置为不限制",
                             color = Color(0xFFB00020),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
@@ -300,30 +311,37 @@ fun UseNotificationScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = if (systemSmsPkgs.isEmpty()) "未选择短信应用" else "已监听：" + systemSmsPkgs.joinToString(), style = MaterialTheme.typography.bodySmall)
+                                val selectedLabel = smsCandidates.firstOrNull { it.first == selectedSmsPkg }?.second
+                                Text(
+                                    text = if (selectedSmsPkg == null) "未选择短信应用" else "已监听：" + (selectedLabel ?: selectedSmsPkg!!),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (selectedSmsPkg == null) Color(0xFFB00020) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 TextButton(onClick = { showSmsPicker = true }, enabled = controlsEnabled) { Text("点击选择短信App") }
                             }
                             if (showSmsPicker) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Column(modifier = Modifier.fillMaxWidth()) {
-                                    smsCandidates.forEach { (pkg, label) ->
-                                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                            Text(text = label, modifier = Modifier.weight(1f))
-                                            Switch(
-                                                checked = systemSmsPkgs.contains(pkg),
-                                                onCheckedChange = { checked ->
-                                                    val updated = systemSmsPkgs.toMutableSet()
-                                                    if (checked) updated.add(pkg) else updated.remove(pkg)
-                                                    systemSmsPkgs = updated
-                                                    setSystemSmsPackages(context, updated)
-                                                },
-                                                enabled = controlsEnabled
-                                            )
+                                    if (smsCandidates.isEmpty()) {
+                                        Text(text = "未检测到短信应用")
+                                    } else {
+                                        smsCandidates.forEach { (pkg, label) ->
+                                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                                Text(text = label, modifier = Modifier.weight(1f))
+                                                RadioButton(
+                                                    selected = selectedSmsPkg == pkg,
+                                                    onClick = {
+                                                        selectedSmsPkg = pkg
+                                                        val updated = setOf(pkg)
+                                                        systemSmsPkgs = updated
+                                                        setSystemSmsPackages(context, updated)
+                                                        showSmsPicker = false
+                                                    },
+                                                    enabled = controlsEnabled
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
                                         }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                    }
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                        TextButton(onClick = { showSmsPicker = false }) { Text("完成") }
                                     }
                                 }
                             }
