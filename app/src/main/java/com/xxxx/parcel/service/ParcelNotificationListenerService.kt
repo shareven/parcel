@@ -31,6 +31,11 @@ import com.xxxx.parcel.util.getSystemSmsNotifySwitch
 
 class ParcelNotificationListenerService : NotificationListenerService() {
 
+    companion object {
+        @Volatile private var lastContent: String? = null
+        @Volatile private var lastTs: Long = 0L
+    }
+
     private val pddPackage = ThirdPartyDefaults.PDD_PACKAGE
     private val douyinPackage = ThirdPartyDefaults.DOUYIN_PACKAGE
     private val xhsPackage = ThirdPartyDefaults.XHS_PACKAGE
@@ -94,18 +99,19 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             when (pkg) {
                 pddPackage -> {
                     if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(pddPackage))) {
+                        addLog(context, "PDD通知: ${text}")
                         addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
-                        addLog(context, "PDD通知保存: ${text}")
                     }
                 }
                 douyinPackage -> {
                     if (isAppSwitchEnabled(context, douyinPackage) && title == getTitleForPackage(context, douyinPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(douyinPackage))) {
+                        addLog(context, "抖音通知: ${text}")
                         addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
-                        addLog(context, "抖音通知保存: ${text}")
                     }
                 }
                 xhsPackage -> {
                     if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(xhsPackage))) {
+                        addLog(context, "小红书通知: ${text}")
                         addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                     }
                 }
@@ -123,14 +129,14 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                             if (text.isNotBlank()) {
                                 // 仅当解析成功时才保存
                                 if (shouldSaveBasedOnParse(context, text)) {
+                                    addLog(context, "微信通知: ${text}")
                                     addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
-                                    addLog(context, "微信通知保存: ${text}")
                                 } else {
                                     Log.d(
                                         "ParcelNotifyService",
                                         "WeChat matched titles but parse failed; content not saved"
                                     )
-
+                                    
                                 }
                             } else {
                                 Log.d(
@@ -154,6 +160,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                     val systemEnabled = getSystemSmsNotifySwitch(context)
                     if (systemEnabled && systemPkgs.contains(pkg)) {
                         if (text.isNotBlank()) {
+                            addLog(context, "短信通知: ${text}")
                             addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
 
                         }
@@ -187,6 +194,10 @@ class ParcelNotificationListenerService : NotificationListenerService() {
 
     private fun addNotificationAsCustomSmsIfNotInInboxDelayed(context: Context, content: String) {
         Thread {
+            val nowStart = System.currentTimeMillis()
+            val prev = lastContent
+            val withinWindow = prev != null && prev == content && (nowStart - lastTs) < 2000L
+            if (withinWindow) return@Thread
             try {
                 Thread.sleep(1000L)
             } catch (_: Exception) {}
@@ -195,6 +206,9 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             } catch (_: Exception) { false }
             if (!exists) {
                 addNotificationAsCustomSms(context, content)
+                addLog(context, "通知保存: ${content}")
+                lastContent = content
+                lastTs = nowStart
             } else {
                 addLog(context, "通知文本已在短信箱，跳过保存: ${content}")
             }

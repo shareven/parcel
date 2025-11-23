@@ -320,7 +320,7 @@ object ThirdPartyDefaults {
 }
 
 @kotlinx.serialization.Serializable
-data class LogEntry(val timestamp: Long, val text: String)
+data class LogEntry(val timestamp: Long, val text: String, val version: String = "")
 
 fun addLog(context: Context, text: String) {
     val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
@@ -328,8 +328,17 @@ fun addLog(context: Context, text: String) {
     val list = try {
         if (arrStr.isNullOrBlank()) mutableListOf<LogEntry>() else Json.decodeFromString<List<LogEntry>>(arrStr).toMutableList()
     } catch (_: Exception) { mutableListOf() }
-    list.add(LogEntry(System.currentTimeMillis(), text))
+    val ver = getAppVersionName(context)
+    list.add(LogEntry(System.currentTimeMillis(), text, ver))
     sp.edit().putString("logs_json", Json.encodeToString(list)).apply()
+}
+
+fun getAppVersionName(context: Context): String {
+    return try {
+        val pm = context.packageManager
+        val pInfo = pm.getPackageInfo(context.packageName, 0)
+        pInfo.versionName ?: ""
+    } catch (_: Exception) { "" }
 }
 
 fun getLogs(context: Context, dayMillis: Long? = null): List<LogEntry> {

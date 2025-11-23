@@ -123,8 +123,9 @@ fun LogScreen(navController: NavController) {
                                 logs.forEach { entry ->
                                     val dayStr = sdfDay.format(Date(entry.timestamp))
                                     val timeStr = sdfTime.format(Date(entry.timestamp))
+                                    val ver = entry.version.ifBlank { "" }
                                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                                        Text(text = "$dayStr $timeStr", style = MaterialTheme.typography.bodyMedium)
+                                        Text(text = (if (ver.isNotBlank()) "[v$ver] " else "") + "$dayStr $timeStr", style = MaterialTheme.typography.bodyMedium)
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(text = entry.text, style = MaterialTheme.typography.bodyLarge)
                                     }
