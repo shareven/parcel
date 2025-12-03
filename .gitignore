@@ -16,3 +16,6 @@ local.properties
 key.properties
 .kotlin
 .vscode
+/gradlew
+/gradlew.bat
+/gradle/wrapper/gradle-wrapper.jar
