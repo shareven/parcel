@@ -1,0 +1,15 @@
+This is a free, open-source, ad-free, offline app that prioritizes simplicity and does not collect any personal information.
+
+This app automatically parses received SMS messages and extracts the address and pickup code information, which can be displayed on a desktop card (dark mode supported).
+
+You can add custom rules to improve the parsing effect.
+
+Supports Taobao and Pinduoduo ID codes.
+
+It also supports listening to third-party app notifications and automatically saving pickup code messages, making it more convenient for WeChat friends to pick up their packages.
+
+Enabling notification listening permissions also allows for background process persistence and real-time updates to the desktop card.
+
+Adding a desktop card: Generally hidden in the "All Cards" section at the bottom, under "Plugins" or "Android Widgets".
+
+Welcome to download and use! Please submit an issue for any problems or suggestions.
