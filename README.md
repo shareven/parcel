@@ -18,7 +18,7 @@
 
 # 下载 | Download  
 
-最新版本：v1.0.38
+最新版本：v1.0.39
 
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
