@@ -22,6 +22,7 @@
 
 [Android apk release](https://github.com/shareven/parcel/releases/)
 
+[![F-Droid Version](https://img.shields.io/f-droid/v/com.xxxx.parcel)](https://f-droid.org/packages/com.xxxx.parcel/)
 
 ![GitHub All Releases](https://img.shields.io/github/downloads/shareven/parcel/total)
 
