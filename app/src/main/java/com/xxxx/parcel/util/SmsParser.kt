@@ -7,7 +7,7 @@ import java.util.regex.Pattern
 class SmsParser {
     // 使用正则表达式来匹配地址和取件码（1个或多个取件码）优先匹配快递柜
     private val lockerPattern: Pattern =
-        Pattern.compile("""(?i)([0-9]+)号(?:柜|快递柜|丰巢柜|蜂巢柜)""")
+        Pattern.compile("""(?i)([0-9]+)号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜|)""")
     private val addressPattern: Pattern =
         Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|,|，|。|$)\d*)""")
     private val codePattern: Pattern = Pattern.compile(
