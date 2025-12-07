@@ -5,7 +5,9 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 class SmsParser {
-    // 使用正则表达式来匹配地址和取件码（1个或多个取件码）
+    // 使用正则表达式来匹配地址和取件码（1个或多个取件码）优先匹配快递柜
+    private val lockerPattern: Pattern =
+        Pattern.compile("""(?i)([0-9]+)号(?:柜|快递柜|丰巢柜|蜂巢柜)""")
     private val addressPattern: Pattern =
         Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|,|，|。|$)\d*)""")
     private val codePattern: Pattern = Pattern.compile(
@@ -23,14 +25,14 @@ class SmsParser {
     fun parseSms(sms: String): ParseResult {
         var foundAddress = ""
         var foundCode = ""
-        
+
         // 检查是否包含忽略关键词
         for (ignoreKeyword in ignoreKeywords) {
             if (ignoreKeyword.isNotBlank() && sms.contains(ignoreKeyword, ignoreCase = true)) {
                 return ParseResult("", "", false)
             }
         }
-        
+
         // 使用字符串匹配查找地址
         for (pattern in customAddressPatterns) {
             if (sms.contains(pattern, ignoreCase = true)) {
@@ -38,7 +40,7 @@ class SmsParser {
                 break
             }
         }
-       for (pattern in customCodePatterns) {
+        for (pattern in customCodePatterns) {
             val matcher = pattern.matcher(sms)
             if (matcher.find()) {
                 foundCode = matcher.group(1)?.toString() ?: ""
@@ -46,11 +48,14 @@ class SmsParser {
             }
         }
 
-        // 如果自定义规则没有找到，尝试使用默认规则
+        // 如果自定义规则没有找到，优先匹配柜号地址，其次默认规则
         if (foundAddress.isEmpty()) {
-            val addressMatcher: Matcher = addressPattern.matcher(sms)
-            foundAddress =
-                if (addressMatcher.find()) addressMatcher.group(2)?.toString() ?: "" else ""
+            val lockerMatcher: Matcher = lockerPattern.matcher(sms)
+            foundAddress = if (lockerMatcher.find()) lockerMatcher.group(0)?.toString() ?: "" else ""
+            if (foundAddress.isEmpty()) {
+                val addressMatcher: Matcher = addressPattern.matcher(sms)
+                foundAddress = if (addressMatcher.find()) addressMatcher.group(2)?.toString() ?: "" else ""
+            }
         }
 
         if (foundCode.isEmpty()) {
