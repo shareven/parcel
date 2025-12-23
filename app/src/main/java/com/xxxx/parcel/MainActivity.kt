@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,9 +58,10 @@ import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.ui.LogScreen
 
 
-class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
+class MainActivity : ComponentActivity() {
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
+    private lateinit var permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
     val context = this
     val smsParser = SmsParser()
     val viewModel = ParcelViewModel(smsParser)
@@ -70,6 +70,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 注册权限请求 Launcher
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            val allGranted = permissions.values.all { it }
+            if (allGranted) {
+                readAndParseSms()
+                startSmsDeletionMonitoring()
+            } else {
+                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
+                    readAndParseSms()
+                    startSmsDeletionMonitoring()
+                } else {
+                    guideToSettings()
+                }
+            }
+        }
 
         // 注册 ActivityResultLauncher
         appDetailsLauncher =
@@ -171,23 +188,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         // 检查并请求短信权限
         if (!PermissionUtil.hasSmsPermissions(this)) {
-            ActivityCompat.requestPermissions(
-                this,
+            if (PermissionUtil.isMIUI()) {
+                //小米手机 显示引导弹窗后调用权限请求
+                showMiuiPermissionExplanationDialog(context)
+            }
+            permissionLauncher.launch(
                 arrayOf(
                     Manifest.permission.RECEIVE_SMS,
                     Manifest.permission.READ_SMS,
-                ),
-                1
+                )
             )
-            if (PermissionUtil.isMIUI()) {
-                //小米手机 显示引导弹窗后调用 requestMiuiSmsPermission()
-                showMiuiPermissionExplanationDialog(context)
-            }
-            if (PermissionUtil.hasSmsPermissions(this)) {
-                readAndParseSms()
-                startSmsDeletionMonitoring()
-            }
-
         } else {
             // 权限已授予，读取短信
             readAndParseSms()
@@ -221,10 +231,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         val filter = IntentFilter(action)
         if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(customSmsReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(customSmsReceiver, filter)
+            registerReceiver(customSmsReceiver, filter, RECEIVER_NOT_EXPORTED)
         }
     }
 
@@ -251,28 +258,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val full = ComponentName(context, ParcelNotificationListenerService::class.java).flattenToString()
         val short = "${context.packageName}/.service.ParcelNotificationListenerService"
         return flat.split(":").any { it == full || it == short }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            init()
-
-        } else {
-            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
-                init()
-            } else {
-                guideToSettings()
-            }
-        }
-
     }
 
     private fun guideToSettings() {
