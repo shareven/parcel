@@ -88,6 +88,7 @@ fun HomeScreen(
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showCompleted by remember { mutableStateOf(getShowCompleted(context)) }
     val timeFilterOptions = listOf(
         "全部",
         "今天",
@@ -159,6 +160,15 @@ fun HomeScreen(
                             Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "菜单")
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(if (showCompleted) "隐藏已取件的码" else "显示已取件的码") },
+                                    onClick = {
+                                        showMenu = false
+                                        val new = !showCompleted
+                                        saveShowCompleted(context, new)
+                                        showCompleted = new
+                                    }
+                                )
                             DropdownMenuItem(
                                 text = { Text("添加自定义取件短信") },
                                 onClick = {
@@ -220,7 +230,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (hasPermission) List(context, viewModel, navController, updateAllWidget) else
+            if (hasPermission) List(context, viewModel, navController, updateAllWidget, showCompleted) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -270,7 +280,8 @@ fun List(
     context: Context,
     viewModel: ParcelViewModel,
     navController: NavController,
-    updateAllWidget: () -> Unit
+    updateAllWidget: () -> Unit,
+    showCompleted: Boolean
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
@@ -418,7 +429,7 @@ fun List(
                     val isExpanded = expandedStates.value[result.address] ?: true
                     val isAllCompleted = result.smsDataList.find({ !it.isCompleted }) == null
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = isExpanded || !isAllCompleted,
+                        visible = if (showCompleted) (isExpanded || !isAllCompleted) else (!isAllCompleted),
                         modifier = Modifier.fillMaxWidth()
                     ) {
 
@@ -430,8 +441,9 @@ fun List(
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     result.smsDataList.forEach { smsData ->
-                                       if(!isExpanded&&smsData.isCompleted) null
-                                        else
+                                        if (((!isExpanded) && smsData.isCompleted) || ((!showCompleted) && smsData.isCompleted)) {
+                                            // skip displaying this completed smsData based on expand state or global setting
+                                        } else {
                                             Box(modifier = Modifier.padding(6.dp)) {
                                             Text(
                                                 text = smsData.code,
@@ -456,6 +468,7 @@ fun List(
                                                         updateAllWidget()
                                                     }
                                             )
+                                            }
                                         }
                                     }
                                 }
@@ -517,4 +530,21 @@ private fun openPddIdentityEntry(context: Context) {
             return
         }
     } catch (_: Exception) {}
+}
+
+private fun saveShowCompleted(context: Context, show: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("show_completed_codes", show).apply()
+    } catch (_: Exception) {
+    }
+}
+
+private fun getShowCompleted(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("show_completed_codes", true)
+    } catch (_: Exception) {
+        true
+    }
 }
