@@ -416,10 +416,12 @@ fun List(
                     }
 
                     val isExpanded = expandedStates.value[result.address] ?: true
+                    val isAllCompleted = result.smsDataList.find({ !it.isCompleted }) == null
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = isExpanded,
+                        visible = isExpanded || !isAllCompleted,
                         modifier = Modifier.fillMaxWidth()
                     ) {
+
                         Column {
                             Spacer(modifier = Modifier.height(8.dp))
                             Card(
@@ -428,7 +430,9 @@ fun List(
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     result.smsDataList.forEach { smsData ->
-                                        Box(modifier = Modifier.padding(6.dp)) {
+                                       if(!isExpanded&&smsData.isCompleted) null
+                                        else
+                                            Box(modifier = Modifier.padding(6.dp)) {
                                             Text(
                                                 text = smsData.code,
                                                 textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
