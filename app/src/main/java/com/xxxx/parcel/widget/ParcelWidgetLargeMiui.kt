@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
+import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget.Companion
 
@@ -21,9 +22,8 @@ class ParcelWidgetLargeMiui : AppWidgetProvider() {
         ) {
 
             // 获取 ParcelViewModel 实例
-            val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
-                ViewModelProvider(it)[ParcelViewModel::class.java]
-            }
+            val viewModel = ParcelViewModel(context = context.applicationContext)
+            getAllSaveData(context, viewModel)
             ParcelWidget.updateAllByProvider(context, ParcelWidgetLargeMiui::class.java, viewModel)
 
         } else {
@@ -40,9 +40,8 @@ class ParcelWidgetLargeMiui : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         // 获取 ParcelViewModel 实例
-        val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
-            ViewModelProvider(it)[ParcelViewModel::class.java]
-        }
+        val viewModel = ParcelViewModel(context = context.applicationContext)
+        getAllSaveData(context, viewModel)
 
         // 为每个小部件执行更新
         for (appWidgetId in appWidgetIds) {
@@ -55,9 +54,8 @@ class ParcelWidgetLargeMiui : AppWidgetProvider() {
         // 当第一个小部件被添加时调用
         // 获取 ParcelViewModel 实例
         if (context != null) {
-            val viewModel = (context.applicationContext as? ViewModelStoreOwner)?.let {
-                ViewModelProvider(it)[ParcelViewModel::class.java]
-            }
+            val viewModel = ParcelViewModel(context = context.applicationContext)
+            getAllSaveData(context, viewModel)
             ParcelWidget.updateAppWidget(
                 context,
                 AppWidgetManager.getInstance(context),

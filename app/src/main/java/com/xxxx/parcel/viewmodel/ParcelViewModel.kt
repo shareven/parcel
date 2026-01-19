@@ -1,5 +1,6 @@
 package com.xxxx.parcel.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,18 +8,29 @@ import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.getCustomList
 import com.xxxx.parcel.util.isSameDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ParcelViewModel(private val smsParser: SmsParser = SmsParser()) : ViewModel() {
+class ParcelViewModel(
+    private val smsParser: SmsParser = SmsParser(),
+    private val context: Context? = null
+) : ViewModel() {
     // 所有短信列表
     private val _allMessages = MutableStateFlow<List<SmsModel>>(emptyList())
 
     // 所有已取件id列表
     private val _allCompletedIds = MutableStateFlow<List<String>>(emptyList())
+
+    init {
+        context?.let {
+            val completedIds = getCustomList(it, "completedIds").toMutableList()
+            _allCompletedIds.value = completedIds
+        }
+    }
 
     // 解析成功的短信
     private val _successSmsData = MutableStateFlow<List<SmsData>>(emptyList())

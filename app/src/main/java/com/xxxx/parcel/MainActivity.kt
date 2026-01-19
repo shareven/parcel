@@ -62,13 +62,15 @@ class MainActivity : ComponentActivity() {
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
+    private lateinit var viewModel: ParcelViewModel
     val context = this
     val smsParser = SmsParser()
-    val viewModel = ParcelViewModel(smsParser)
     private var customSmsReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        viewModel = ParcelViewModel(smsParser, applicationContext)
 
         // 注册权限请求 Launcher
         permissionLauncher = registerForActivityResult(
@@ -111,17 +113,21 @@ class MainActivity : ComponentActivity() {
 
 
     private fun startSmsDeletionMonitoring() {
-        smsContentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(selfChange: Boolean) {
-                super.onChange(selfChange)
-                readAndParseSms()
+        try {
+            smsContentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    super.onChange(selfChange)
+                    readAndParseSms()
+                }
             }
+            contentResolver.registerContentObserver(
+                "content://sms".toUri(),
+                true,
+                smsContentObserver
+            )
+        } catch (e: SecurityException) {
+            Log.e("MainActivity", "Failed to register SMS observer: ${e.message}")
         }
-        contentResolver.registerContentObserver(
-            "content://sms".toUri(),
-            true,
-            smsContentObserver
-        )
     }
 
     fun updateAllWidget() {
@@ -159,14 +165,18 @@ class MainActivity : ComponentActivity() {
     }
 
     fun readAndParseSms() {
-        val context = applicationContext
-        val daysFilter = viewModel.timeFilterIndex.value
-        val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
-        val customSmsList = getCustomSmsByTimeFilter(context, daysFilter)
+        try {
+            val context = applicationContext
+            val daysFilter = viewModel.timeFilterIndex.value
+            val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
+            val customSmsList = getCustomSmsByTimeFilter(context, daysFilter)
 
-        viewModel.getAllMessageWithCustom(smsList, customSmsList)
+            viewModel.getAllMessageWithCustom(smsList, customSmsList)
 
-        updateAllWidget()
+            updateAllWidget()
+        } catch (e: SecurityException) {
+            Log.e("MainActivity", "Failed to read SMS: ${e.message}")
+        }
     }
 
 
