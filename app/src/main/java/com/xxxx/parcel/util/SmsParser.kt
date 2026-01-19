@@ -56,7 +56,14 @@ class SmsParser {
 
             if (foundAddress.isEmpty()) {
                 val addressMatcher: Matcher = addressPattern.matcher(sms)
-                foundAddress = if (addressMatcher.find()) addressMatcher.group(2)?.toString() ?: "" else ""
+                var longestAddress = ""
+                while (addressMatcher.find()) {
+                    val currentAddress = addressMatcher.group(2)?.toString() ?: ""
+                    if (currentAddress.length > longestAddress.length) {
+                        longestAddress = currentAddress
+                    }
+                }
+                foundAddress = longestAddress
             }
         }
 

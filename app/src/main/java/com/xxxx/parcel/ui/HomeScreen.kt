@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.util.PermissionUtil
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
@@ -89,6 +92,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     var showCompleted by remember { mutableStateOf(getShowCompleted(context)) }
+    var showCodeTime by remember { mutableStateOf(getShowCodeTime(context)) }
     val timeFilterOptions = listOf(
         "全部",
         "今天",
@@ -170,6 +174,15 @@ fun HomeScreen(
                                     }
                                 )
                             DropdownMenuItem(
+                                text = { Text(if (showCodeTime) "隐藏时间" else "显示时间") },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !showCodeTime
+                                    saveShowCodeTime(context, new)
+                                    showCodeTime = new
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("添加自定义取件短信") },
                                 onClick = {
                                     showMenu = false
@@ -230,7 +243,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (hasPermission) List(context, viewModel, navController, updateAllWidget, showCompleted) else
+            if (hasPermission) List(context, viewModel, navController, updateAllWidget, showCompleted, showCodeTime) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -281,7 +294,8 @@ fun List(
     viewModel: ParcelViewModel,
     navController: NavController,
     updateAllWidget: () -> Unit,
-    showCompleted: Boolean
+    showCompleted: Boolean,
+    showCodeTime: Boolean
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
@@ -445,29 +459,43 @@ fun List(
                                             // skip displaying this completed smsData based on expand state or global setting
                                         } else {
                                             Box(modifier = Modifier.padding(6.dp)) {
-                                            Text(
-                                                text = smsData.code,
-                                                textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                                color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
-                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                                modifier = Modifier
-                                                    .clickable {
-                                                        if (smsData.isCompleted) {
-                                                            removeCompletedId(
-                                                                context,
-                                                                viewModel,
-                                                                smsData.id
-                                                            )
-                                                        } else {
-                                                            addCompletedIds(
-                                                                context,
-                                                                viewModel,
-                                                                listOf(smsData.id)
-                                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = smsData.code,
+                                                    textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                                    color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
+                                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                    modifier = Modifier
+                                                        .clickable {
+                                                            if (smsData.isCompleted) {
+                                                                removeCompletedId(
+                                                                    context,
+                                                                    viewModel,
+                                                                    smsData.id
+                                                                )
+                                                            } else {
+                                                                addCompletedIds(
+                                                                    context,
+                                                                    viewModel,
+                                                                    listOf(smsData.id)
+                                                                )
+                                                            }
+                                                            updateAllWidget()
                                                         }
-                                                        updateAllWidget()
-                                                    }
-                                            )
+                                                )
+                                                if (showCodeTime) {
+                                                    val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+                                                    Text(
+                                                        text = sdf.format(Date(smsData.sms.timestamp)),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                                    )
+                                                }
+                                            }
                                             }
                                         }
                                     }
@@ -544,6 +572,23 @@ private fun getShowCompleted(context: Context): Boolean {
     return try {
         val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
         prefs.getBoolean("show_completed_codes", true)
+    } catch (_: Exception) {
+        true
+    }
+}
+
+private fun saveShowCodeTime(context: Context, show: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("show_code_time", show).apply()
+    } catch (_: Exception) {
+    }
+}
+
+private fun getShowCodeTime(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("show_code_time", true)
     } catch (_: Exception) {
         true
     }
