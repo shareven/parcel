@@ -54,18 +54,22 @@ fun addCustomList(context: Context, key: String, newString: String) {
     saveCustomList(context, key, existingSet)
 }
 
-fun removeCompletedId(context: Context, viewModel: ParcelViewModel, id: String) {
+fun removeCompletedId(context: Context, viewModel: ParcelViewModel, sms: SmsModel) {
+    val key = "${sms.id}_${sms.timestamp}"
     val completedIds = getCustomList(context, "completedIds")
-    completedIds.remove(id)
+    completedIds.remove(key)
+    completedIds.remove(sms.id)
     saveCustomList(context, "completedIds", completedIds)
-    viewModel.removeCompletedId(id)
+    viewModel.removeCompletedId(key)
+    viewModel.removeCompletedId(sms.id)
 }
 
-fun addCompletedIds(context: Context, viewModel: ParcelViewModel, ids: List<String>) {
+fun addCompletedIds(context: Context, viewModel: ParcelViewModel, smsList: List<SmsModel>) {
     val completedIds = getCustomList(context, "completedIds")
-    completedIds.addAll(ids)
+    val newKeys = smsList.map { "${it.id}_${it.timestamp}" }
+    completedIds.addAll(newKeys)
     saveCustomList(context, "completedIds", completedIds)
-    viewModel.addCompletedIds(ids)
+    viewModel.addCompletedIds(newKeys)
 }
 
 fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {

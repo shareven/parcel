@@ -63,9 +63,9 @@ class ParcelViewModel(
         calculateNumAndIsCompleted()
     }
 
-    fun removeCompletedId(id: String) {
+    fun removeCompletedId(key: String) {
         val data = _allCompletedIds.value.toMutableList()
-        data.remove(id)
+        data.remove(key)
         _allCompletedIds.value = data
         calculateNumAndIsCompleted()
     }
@@ -102,10 +102,11 @@ class ParcelViewModel(
                     if (result.success) {
                         Log.d("成功短信", sms.body)
                         Log.d("解析", "addr:${result.address} code:${result.code} ")
-                        currentSuccessful.add(SmsData(result.address, result.code, sms, sms.id))
+                        val combinedKey = "${sms.id}_${sms.timestamp}"
+                        currentSuccessful.add(SmsData(result.address, result.code, sms, combinedKey))
                         // 把同一地址的取件码添加到 parcels 列表中
                         currentParcels.find { it.address == result.address }?.let { parcel ->
-                            val newItem = SmsData(result.address, result.code, sms, sms.id)
+                            val newItem = SmsData(result.address, result.code, sms, combinedKey)
                             val existsSameDaySameAddrCode = parcel.smsDataList.any { existing ->
                                 existing.address == newItem.address &&
                                         existing.code == newItem.code &&
@@ -119,7 +120,7 @@ class ParcelViewModel(
                             currentParcels.add(
                                 ParcelData(
                                     result.address,
-                                    mutableListOf(SmsData(result.address, result.code, sms, sms.id))
+                                    mutableListOf(SmsData(result.address, result.code, sms, combinedKey))
                                 )
                             )
                         }
@@ -142,13 +143,19 @@ class ParcelViewModel(
 
 
     //计算包裹数量, 判断是否已取件
-    private fun calculateNumAndIsCompleted() {
+    private     fun calculateNumAndIsCompleted() {
 
         _parcelsData.value.let { currentList ->
             val newList = currentList.map { parcels ->
                 parcels.copy().apply {
                     num = smsDataList.sumOf { smsData ->
-                        val isCompleted = _allCompletedIds.value.contains(smsData.id) ?: false
+                        val isCompleted = _allCompletedIds.value.any { stored ->
+                            if (stored.contains("_")) {
+                                stored == "${smsData.sms.id}_${smsData.sms.timestamp}"
+                            } else {
+                                stored == smsData.sms.id
+                            }
+                        }
                         smsData.isCompleted = isCompleted
                         if (!isCompleted) smsData.code.split(", ").size else 0
                     }

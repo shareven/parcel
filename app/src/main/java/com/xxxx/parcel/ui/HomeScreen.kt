@@ -422,10 +422,10 @@ fun List(
                             modifier = Modifier.size(36.dp),
                             onClick = {
                                 if (result.num > 0) {
-                                    val ids = result.smsDataList
+                                    val smsList = result.smsDataList
                                         .filterNot { it.isCompleted }
-                                        .map { it.id }
-                                    addCompletedIds(context, viewModel, ids)
+                                        .map { it.sms }
+                                    addCompletedIds(context, viewModel, smsList)
                                     updateAllWidget()
                                 }
                             },
@@ -475,13 +475,13 @@ fun List(
                                                                 removeCompletedId(
                                                                     context,
                                                                     viewModel,
-                                                                    smsData.id
+                                                                    smsData.sms
                                                                 )
                                                             } else {
                                                                 addCompletedIds(
                                                                     context,
                                                                     viewModel,
-                                                                    listOf(smsData.id)
+                                                                    listOf(smsData.sms)
                                                                 )
                                                             }
                                                             updateAllWidget()
