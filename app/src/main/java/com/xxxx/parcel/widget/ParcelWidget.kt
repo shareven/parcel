@@ -16,7 +16,6 @@ import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
-import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.util.getAllSaveData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 
@@ -175,7 +174,9 @@ class ParcelWidget : AppWidgetProvider() {
                     }
                 }
                 val ordered = grouped.map { (addr, codes) ->
-                    val effectiveCodes = codes.filterNot { triple -> completedIds.contains(triple.third) }
+                    val effectiveCodes = codes.filterNot { triple -> 
+                        completedIds.contains(triple.third) || completedIds.contains("${triple.third}_${triple.second}")
+                    }
                     addr to effectiveCodes
                 }.sortedByDescending { it.second.size }
 

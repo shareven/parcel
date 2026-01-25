@@ -8,6 +8,9 @@ APK_NAME="parcel-v${VERSION}.apk"
 sed -i '' "s/最新版本：v[0-9.]*/最新版本：v${VERSION}/" README.md
 echo "README.md 版本号已更新: v${VERSION}"
 
+# 清除缓存  --no-build-cache 告诉 Gradle 忽略所有全局缓存，重新计算所有任务。
+./gradlew clean --no-build-cache
+
 # 构建Release版本
 echo "开始构建Parcel Release版本..."
 ./gradlew assembleRelease
