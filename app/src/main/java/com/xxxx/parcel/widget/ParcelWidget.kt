@@ -9,7 +9,7 @@ import android.widget.RemoteViews
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.xxxx.parcel.util.getCustomList
-import com.xxxx.parcel.util.getCustomSmsList
+import com.xxxx.parcel.util.getCustomSmsByTimeFilter
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.isSameDay
 import com.xxxx.parcel.util.SmsUtil
@@ -161,7 +161,7 @@ class ParcelWidget : AppWidgetProvider() {
                 getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
                 val completedIds = getCustomList(context, "completedIds")
                 val daysFilter = getIndex(context)
-                val mergedList = (SmsUtil.readSmsByTimeFilter(context, daysFilter) + getCustomSmsList(context))
+                val mergedList = (SmsUtil.readSmsByTimeFilter(context, daysFilter) + getCustomSmsByTimeFilter(context, daysFilter))
                 val grouped = mutableMapOf<String, MutableList<Triple<String, Long, String>>>()
                 mergedList.forEach { sms ->
                     val r = parser.parseSms(sms.body)
