@@ -186,6 +186,13 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text("地址归类") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("address_group")
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("规则列表") },
                                 onClick = {
                                     showMenu = false

@@ -9,6 +9,7 @@ import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.SmsProcessor
 import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.getAddressMappings
 import com.xxxx.parcel.util.getCustomList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,9 +96,10 @@ class ParcelViewModel(
         viewModelScope.launch {
             val allMessages = _allMessages.value
             val completedIds = _allCompletedIds.value
+            val addressMappings = context?.let { getAddressMappings(it) } ?: emptyMap()
 
             val result = withContext(Dispatchers.Default) {
-                SmsProcessor.process(allMessages, smsParser, completedIds)
+                SmsProcessor.process(allMessages, smsParser, completedIds, addressMappings)
             }
 
             _successSmsData.value = result.successful

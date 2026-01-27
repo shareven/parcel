@@ -32,6 +32,7 @@ import androidx.navigation.navArgument
 import com.xxxx.parcel.ui.AboutScreen
 import com.xxxx.parcel.ui.AddCustomSmsScreen
 import com.xxxx.parcel.ui.AddRuleScreen
+import com.xxxx.parcel.ui.AddressGroupScreen
 import com.xxxx.parcel.ui.FailSmsScreen
 import com.xxxx.parcel.ui.HomeScreen
 import com.xxxx.parcel.ui.RulesScreen
@@ -359,6 +360,9 @@ fun App(
                         navController,
                         URLDecoder.decode(message, "UTF-8"),
                         onCallback = { readAndParseSms() })
+                }
+                composable("address_group") {
+                    AddressGroupScreen(context, navController, onCallback = { readAndParseSms() })
                 }
                 composable("rules") {
                     RulesScreen(

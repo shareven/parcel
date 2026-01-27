@@ -30,14 +30,16 @@ object SmsProcessor {
         val systemSms = SmsUtil.readSmsByTimeFilter(context, daysFilter)
         val customSms = getCustomSmsByTimeFilter(context, daysFilter)
         val mergedList = systemSms + customSms
+        val addressMappings = getAddressMappings(context)
 
-        process(mergedList, parser, completedIds)
+        process(mergedList, parser, completedIds, addressMappings)
     }
 
     fun process(
         messages: List<SmsModel>,
         parser: SmsParser,
-        completedIds: List<String>
+        completedIds: List<String>,
+        addressMappings: Map<String, String> = emptyMap()
     ): ProcessResult {
         val successful = mutableListOf<SmsData>()
         val parcelsMap = mutableMapOf<String, ParcelData>()
@@ -48,12 +50,16 @@ object SmsProcessor {
 
             if (result.success) {
                 val combinedKey = "${sms.id}_${sms.timestamp}"
-                val smsData = SmsData(result.address, result.code, sms, combinedKey)
+                val originalAddress = result.address
+                // 获取分组用的地址（优先使用 tag）
+                val groupAddress = addressMappings[originalAddress] ?: originalAddress
+                
+                val smsData = SmsData(originalAddress, result.code, sms, combinedKey)
                 successful.add(smsData)
 
-                // Grouping logic
-                val existingParcel = parcelsMap[result.address]
-                val newItem = SmsData(result.address, result.code, sms, combinedKey)
+                // Grouping logic - use groupAddress for grouping
+                val existingParcel = parcelsMap[groupAddress]
+                val newItem = SmsData(originalAddress, result.code, sms, combinedKey)
 
                 if (existingParcel != null) {
                     val existsSameDaySameAddrCode = existingParcel.smsDataList.any { existing ->
@@ -65,8 +71,8 @@ object SmsProcessor {
                         existingParcel.smsDataList.add(newItem)
                     }
                 } else {
-                    parcelsMap[result.address] = ParcelData(
-                        result.address,
+                    parcelsMap[groupAddress] = ParcelData(
+                        groupAddress,
                         mutableListOf(newItem)
                     )
                 }

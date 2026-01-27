@@ -423,3 +423,57 @@ fun removeSystemSmsPackage(context: Context, pkg: String) {
     set.remove(pkg)
     setSystemSmsPackages(context, set)
 }
+
+// ===== 地址归类映射 =====
+@kotlinx.serialization.Serializable
+data class AddressMapping(val originalAddress: String, val tag: String)
+
+fun getAddressMappings(context: Context): Map<String, String> {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val jsonStr = sp.getString("address_mappings_json", null) ?: return emptyMap()
+    return try {
+        Json.decodeFromString<List<AddressMapping>>(jsonStr).associate { it.originalAddress to it.tag }
+    } catch (e: Exception) {
+        emptyMap()
+    }
+}
+
+fun saveAddressMapping(context: Context, originalAddress: String, tag: String) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val currentJson = sp.getString("address_mappings_json", null) ?: "[]"
+    val currentList = try {
+        Json.decodeFromString<List<AddressMapping>>(currentJson).toMutableList()
+    } catch (e: Exception) {
+        mutableListOf()
+    }
+    
+    // 移除旧的映射（如果有）
+    currentList.removeAll { it.originalAddress == originalAddress }
+    // 添加新的映射
+    currentList.add(AddressMapping(originalAddress, tag))
+    
+    sp.edit().putString("address_mappings_json", Json.encodeToString(currentList)).apply()
+}
+
+fun removeAddressMapping(context: Context, originalAddress: String) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val currentJson = sp.getString("address_mappings_json", null) ?: return
+    val currentList = try {
+        Json.decodeFromString<List<AddressMapping>>(currentJson).toMutableList()
+    } catch (e: Exception) {
+        return
+    }
+    
+    currentList.removeAll { it.originalAddress == originalAddress }
+    sp.edit().putString("address_mappings_json", Json.encodeToString(currentList)).apply()
+}
+
+fun clearAddressMappings(context: Context) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    sp.edit().remove("address_mappings_json").apply()
+}
+
+fun getAllTags(context: Context): List<String> {
+    val mappings = getAddressMappings(context)
+    return mappings.values.toSet().toList()
+}
