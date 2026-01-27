@@ -7,9 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.model.SmsModel
+import com.xxxx.parcel.util.SmsProcessor
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.getCustomList
-import com.xxxx.parcel.util.isSameDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,14 +62,14 @@ class ParcelViewModel(
         val data = _allCompletedIds.value.toMutableList()
         data.addAll(list)
         _allCompletedIds.value = data
-        _parcelsData.value = calculateNumAndIsCompleted(_parcelsData.value)
+        _parcelsData.value = SmsProcessor.recalculateParcels(_parcelsData.value, _allCompletedIds.value)
     }
 
     fun removeCompletedId(key: String) {
         val data = _allCompletedIds.value.toMutableList()
         data.remove(key)
         _allCompletedIds.value = data
-        _parcelsData.value = calculateNumAndIsCompleted(_parcelsData.value)
+        _parcelsData.value = SmsProcessor.recalculateParcels(_parcelsData.value, _allCompletedIds.value)
     }
 
     fun clearData() {
@@ -94,87 +94,16 @@ class ParcelViewModel(
         clearData()
         viewModelScope.launch {
             val allMessages = _allMessages.value
-            
-            val (newSuccessful, newParcels, newFailed) = withContext(Dispatchers.Default) {
-                val successful = mutableListOf<SmsData>()
-                val parcelsMap = mutableMapOf<String, ParcelData>()
-                val failed = mutableListOf<SmsModel>()
+            val completedIds = _allCompletedIds.value
 
-                allMessages.forEach { sms ->
-                    val result: SmsParser.ParseResult = smsParser.parseSms(sms.body)
-
-                    if (result.success) {
-                        Log.d("成功短信", sms.body)
-                        Log.d("解析", "addr:${result.address} code:${result.code} ")
-                        val combinedKey = "${sms.id}_${sms.timestamp}"
-                        
-                        successful.add(SmsData(result.address, result.code, sms, combinedKey))
-
-                        // 把同一地址的取件码添加到 parcels 列表中
-                        val existingParcel = parcelsMap[result.address]
-                        
-                        val newItem = SmsData(result.address, result.code, sms, combinedKey)
-                        if (existingParcel != null) {
-                            val existsSameDaySameAddrCode = existingParcel.smsDataList.any { existing ->
-                                existing.address == newItem.address &&
-                                        existing.code == newItem.code &&
-                                        isSameDay(existing.sms.timestamp, newItem.sms.timestamp)
-                            }
-                            if (!existsSameDaySameAddrCode) {
-                                existingParcel.smsDataList.add(newItem)
-                            }
-                        } else {
-                            parcelsMap[result.address] = ParcelData(
-                                result.address,
-                                mutableListOf(newItem)
-                            )
-                        }
-                    } else {
-                        Log.e("失败短信", sms.body)
-                        Log.e("解析", "addr:${result.address} code:${result.code} ")
-                        failed.add(sms)
-                    }
-                }
-
-                // 按时间降序排序
-                successful.sortByDescending { it.sms.timestamp }
-                failed.sortByDescending { it.timestamp }
-
-                val parcelList = parcelsMap.values.toList()
-                // Sort parcel sms lists
-                parcelList.forEach { parcel ->
-                    parcel.smsDataList.sortBy { x -> x.code }
-                }
-
-                Triple(successful, parcelList, failed)
+            val result = withContext(Dispatchers.Default) {
+                SmsProcessor.process(allMessages, smsParser, completedIds)
             }
 
-            _successSmsData.value = newSuccessful
-            _failedMessages.value = newFailed
-
-            val finalParcels = calculateNumAndIsCompleted(newParcels)
-            _parcelsData.value = finalParcels
+            _successSmsData.value = result.successful
+            _failedMessages.value = result.failed
+            _parcelsData.value = result.parcels
         }
-    }
-
-
-    //计算包裹数量, 判断是否已取件
-    private fun calculateNumAndIsCompleted(parcels: List<ParcelData>): List<ParcelData> {
-        val completedIdsSet = HashSet(_allCompletedIds.value)
-
-        return parcels.map { parcel ->
-            parcel.copy().apply {
-                num = smsDataList.sumOf { smsData ->
-                    val combinedKey = "${smsData.sms.id}_${smsData.sms.timestamp}"
-                    val simpleKey = smsData.sms.id
-                    
-                    val isCompleted = completedIdsSet.contains(combinedKey) || completedIdsSet.contains(simpleKey)
-                    
-                    smsData.isCompleted = isCompleted
-                    if (!isCompleted) smsData.code.split(", ").size else 0
-                }
-            }
-        }.sortedByDescending { it.num }
     }
 
     // 将自定义规则添加到 SmsParser

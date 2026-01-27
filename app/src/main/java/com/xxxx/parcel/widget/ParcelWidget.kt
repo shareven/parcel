@@ -8,16 +8,23 @@ import android.content.Intent
 import android.widget.RemoteViews
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
+import com.xxxx.parcel.util.SmsProcessor
 import com.xxxx.parcel.util.getCustomList
 import com.xxxx.parcel.util.getCustomSmsByTimeFilter
 import com.xxxx.parcel.util.SmsParser
-import com.xxxx.parcel.util.isSameDay
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.util.getAllSaveData
+import com.xxxx.parcel.util.addLog
+import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class ParcelWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -120,6 +127,35 @@ class ParcelWidget : AppWidgetProvider() {
             appWidgetId: Int,
             viewModel: ParcelViewModel?
         ) {
+            val parcels = viewModel?.parcelsData?.value
+            if (parcels != null && parcels.isNotEmpty()) {
+                populateWidgetData(context, appWidgetManager, appWidgetId, parcels)
+            } else {
+                val parser = SmsParser()
+                getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
+                getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
+                getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
+                val completedIds = getCustomList(context, "completedIds").toList()
+                val daysFilter = getIndex(context)
+
+                GlobalScope.launch(Dispatchers.Main) {
+                    try {
+                        val result = SmsProcessor.loadAndProcess(context, daysFilter, parser, completedIds)
+                        populateWidgetData(context, appWidgetManager, appWidgetId, result.parcels)
+                    } catch (e: Exception) {
+                        Log.e("ParcelWidget", "Error loading SMS: ${e.message}")
+                        addLog(context, "小组件加载短信失败: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        private fun populateWidgetData(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int,
+            parcels: List<ParcelData>
+        ) {
             var total = 0
             var address1 = ""
             var codeList1 = ""
@@ -134,71 +170,24 @@ class ParcelWidget : AppWidgetProvider() {
             var address6 = ""
             var codeList6 = ""
 
-            val parcels = viewModel?.parcelsData?.value
-            if (parcels != null && parcels.isNotEmpty()) {
-                total = parcels.sumOf { it.num }
-                fun fill(idx: Int, setAddr: (String)->Unit, setCodes: (String)->Unit) {
-                    val item = parcels.getOrNull(idx)
-                    if (item != null && item.num > 0) {
-                        val codes = item.smsDataList.filter { !it.isCompleted }.map { it.code }.joinToString("\n")
-                        setAddr(item.address + "（${item.num}）")
-                        setCodes(codes)
-                    } else {
-                        setAddr("")
-                        setCodes("")
-                    }
+            total = parcels.sumOf { it.num }
+            fun fill(idx: Int, setAddr: (String)->Unit, setCodes: (String)->Unit) {
+                val item = parcels.getOrNull(idx)
+                if (item != null && item.num > 0) {
+                    val codes = item.smsDataList.filter { !it.isCompleted }.map { it.code }.joinToString("\n")
+                    setAddr(item.address + "（${item.num}）")
+                    setCodes(codes)
+                } else {
+                    setAddr("")
+                    setCodes("")
                 }
-                fill(0, { address1 = it }, { codeList1 = it })
-                fill(1, { address2 = it }, { codeList2 = it })
-                fill(2, { address3 = it }, { codeList3 = it })
-                fill(3, { address4 = it }, { codeList4 = it })
-                fill(4, { address5 = it }, { codeList5 = it })
-                fill(5, { address6 = it }, { codeList6 = it })
-            } else {
-                val parser = SmsParser()
-                getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
-                getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
-                getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
-                val completedIds = getCustomList(context, "completedIds")
-                val daysFilter = getIndex(context)
-                val mergedList = (SmsUtil.readSmsByTimeFilter(context, daysFilter) + getCustomSmsByTimeFilter(context, daysFilter))
-                val grouped = mutableMapOf<String, MutableList<Triple<String, Long, String>>>()
-                mergedList.forEach { sms ->
-                    val r = parser.parseSms(sms.body)
-                    if (r.success) {
-                        val addr = r.address
-                        val code = r.code
-                        val list = grouped.getOrPut(addr) { mutableListOf() }
-                        val sameDaySame = list.any { it.first == code && isSameDay(it.second, sms.timestamp) }
-                        if (!sameDaySame) list.add(Triple(code, sms.timestamp, sms.id))
-                    }
-                }
-                val ordered = grouped.map { (addr, codes) ->
-                    val effectiveCodes = codes.filterNot { triple -> 
-                        completedIds.contains(triple.third) || completedIds.contains("${triple.third}_${triple.second}")
-                    }
-                    addr to effectiveCodes
-                }.sortedByDescending { it.second.size }
-
-                total = ordered.sumOf { it.second.size }
-                fun fill2(idx: Int, setAddr: (String)->Unit, setCodes: (String)->Unit) {
-                    val item = ordered.getOrNull(idx)
-                    if (item != null && item.second.isNotEmpty()) {
-                        setAddr(item.first + "（${item.second.size}）")
-                        setCodes(item.second.joinToString("\n") { it.first })
-                    } else {
-                        setAddr("")
-                        setCodes("")
-                    }
-                }
-                fill2(0, { address1 = it }, { codeList1 = it })
-                fill2(1, { address2 = it }, { codeList2 = it })
-                fill2(2, { address3 = it }, { codeList3 = it })
-                fill2(3, { address4 = it }, { codeList4 = it })
-                fill2(4, { address5 = it }, { codeList5 = it })
-                fill2(5, { address6 = it }, { codeList6 = it })
             }
-
+            fill(0, { address1 = it }, { codeList1 = it })
+            fill(1, { address2 = it }, { codeList2 = it })
+            fill(2, { address3 = it }, { codeList3 = it })
+            fill(3, { address4 = it }, { codeList4 = it })
+            fill(4, { address5 = it }, { codeList5 = it })
+            fill(5, { address6 = it }, { codeList6 = it })
 
             // 构建 RemoteViews 对象
             val views = RemoteViews(context.packageName, R.layout.widget_layout).apply {

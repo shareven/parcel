@@ -25,7 +25,7 @@ fun saveIndex(context: Context, index: Int) {
 fun getIndex(context: Context): Int {
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-    return sharedPreferences.getInt("timeFilterIndex", 0)
+    return sharedPreferences.getInt("timeFilterIndex", 3)
 }
 
 // 保存字符串列表到 SharedPreferences
@@ -135,6 +135,7 @@ fun getCustomSmsByTimeFilter(context: Context, daysFilter: Int): List<SmsModel> 
     val allCustomSms = try {
         Json.decodeFromString<List<SmsModel>>(jsonString)
     } catch (e: Exception) {
+        addLog(context, "解析自定义短信列表失败: ${e.message}")
         emptyList()
     }
     

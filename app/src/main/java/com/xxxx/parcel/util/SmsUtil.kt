@@ -63,9 +63,9 @@ class SmsUtil {
                     cursor.close()
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_LONG).show()
                 Log.e("SmsUtil", "读取短信失败: ${e.message}")
                 addLog(context, "读取短信失败: ${e.message}")
+                Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_LONG).show()
             }
 
             return smsList
@@ -82,6 +82,7 @@ class SmsUtil {
                     c.moveToFirst()
                 } ?: false
             } catch (e: Exception) {
+                addLog(context, "检查最近短信失败: ${e.message}")
                 false
             }
         }

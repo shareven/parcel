@@ -41,9 +41,9 @@ import com.xxxx.parcel.ui.theme.ParcelTheme
 import com.xxxx.parcel.util.PermissionUtil
 import com.xxxx.parcel.util.PermissionUtil.showMiuiPermissionExplanationDialog
 import com.xxxx.parcel.util.SmsParser
+import com.xxxx.parcel.util.SmsProcessor
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllSaveData
-import com.xxxx.parcel.util.getCustomSmsByTimeFilter
 import com.xxxx.parcel.util.getMainSwitch
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import com.xxxx.parcel.widget.ParcelWidget
@@ -55,12 +55,11 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Build
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.xxxx.parcel.widget.ParcelWidgetXL
 import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.ui.LogScreen
+import com.xxxx.parcel.util.addLog
 
 
 class MainActivity : ComponentActivity() {
@@ -178,11 +177,7 @@ class MainActivity : ComponentActivity() {
             try {
                 val context = applicationContext
                 val daysFilter = viewModel.timeFilterIndex.value
-                val (smsList, customSmsList) = withContext(Dispatchers.IO) {
-                    val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
-                    val customSmsList = getCustomSmsByTimeFilter(context, daysFilter)
-                    Pair(smsList, customSmsList)
-                }
+                val (smsList, customSmsList) = SmsProcessor.loadMessages(context, daysFilter)
 
                 viewModel.getAllMessageWithCustom(smsList, customSmsList)
 
@@ -264,6 +259,7 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Request rebind failed: ${e.message}")
+            addLog(this, "请求重新绑定通知监听服务失败: ${e.message}")
         }
     }
 
