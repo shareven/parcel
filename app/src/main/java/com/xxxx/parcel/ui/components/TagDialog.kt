@@ -58,21 +58,19 @@ import androidx.compose.ui.window.DialogProperties
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllTags
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-@Composable
-private fun getAllAddresses(): List<String> {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    return remember(context) {
-        try {
-            val allSms = SmsUtil.readAllSms(context)
-            val parser = SmsParser()
-            allSms.mapNotNull { sms ->
-                val result = parser.parseSms(sms.body)
-                if (result.success) result.address else null
-            }.distinct().sorted()
-        } catch (e: Exception) {
-            emptyList()
-        }
+private fun getAllAddresses(context: android.content.Context): List<String> {
+    return try {
+        val allSms = SmsUtil.readAllSms(context)
+        val parser = SmsParser()
+        allSms.mapNotNull { sms ->
+            val result = parser.parseSms(sms.body)
+            if (result.success) result.address else null
+        }.distinct().sorted()
+    } catch (e: Exception) {
+        emptyList()
     }
 }
 
@@ -99,7 +97,12 @@ fun TagDialog(
     }
     val showWarning = conflictingAddresses.isNotEmpty()
 
-    val allAddresses = getAllAddresses()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val allAddresses = kotlinx.coroutines.runBlocking {
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            getAllAddresses(context)
+        }
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)

@@ -151,7 +151,6 @@ fun SuccessSmsScreen(
                                         text = data.address,
                                         color = Color(0xFF25AF22),
                                         style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
@@ -172,12 +171,11 @@ fun SuccessSmsScreen(
                                         text = data.code,
                                         color = Color(0xFF25AF22),
                                         style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+//                            Spacer(modifier = Modifier.height(6.dp))
 
                             if (tag != null) {
                                 Surface(
@@ -187,7 +185,8 @@ fun SuccessSmsScreen(
                                         showEditDialog = true
                                     },
                                     shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor =  MaterialTheme.colorScheme.onPrimaryContainer,
                                 ) {
                                     Text(
                                         text = tag,
@@ -196,7 +195,6 @@ fun SuccessSmsScreen(
                                             vertical = 4.dp
                                         ),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
                             } else {
@@ -207,7 +205,8 @@ fun SuccessSmsScreen(
                                         showEditDialog = true
                                     },
                                     shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceBright
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
@@ -218,7 +217,6 @@ fun SuccessSmsScreen(
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
                                                 .size(14.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Text(
                                             text = "添加地址标签",
@@ -227,13 +225,12 @@ fun SuccessSmsScreen(
                                                 vertical = 4.dp
                                             ),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

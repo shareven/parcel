@@ -27,26 +27,32 @@ val Shapes = Shapes(
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color.White,
+    onPrimary = Color.Black,
+    primaryContainer = Purple80,
+    onPrimaryContainer = Color.Black,
     secondary = PurpleGrey80,
     tertiary = Pink80,
-     onSecondary = Color.Gray,
-     onTertiary = Color.Black,
-     background = Color.Transparent,
-     onBackground = TextColorAAA,
-     surface = Color.Transparent,
-     onSurface = TextColorWhite
+    onSecondary = Color.Gray,
+    onTertiary = Color.Black,
+    background = Color.Transparent,
+    onBackground = TextColorAAA,
+    surface = Color.Transparent,
+    onSurface = TextColorWhite
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Color.Black,
+    onPrimary = Color.White,
+    primaryContainer = Purple80,
+    onPrimaryContainer = Color.Black,
     secondary = PurpleGrey40,
     tertiary = Pink40,
-     onSecondary = Color.Gray,
-     onTertiary = Color.Black,
-     background = Color.Transparent,
-     onBackground = TextColor,
-     surface = Color.Transparent,
-     onSurface = TextColor
+    onSecondary = Color.Gray,
+    onTertiary = Color.White,
+    background = Color.Transparent,
+    onBackground = TextColor,
+    surface = Color.Transparent,
+    onSurface = TextColor
 
 )
 
@@ -61,7 +67,7 @@ fun ParcelTheme(
     gradientBrushDark: Brush = Brush.linearGradient(
         colors = listOf(Color(0xFF2C105E), Color(0xFF020202), Color(0xFF590E26)) // 定义渐变颜色
     ),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         darkTheme -> DarkColorScheme
@@ -78,7 +84,9 @@ fun ParcelTheme(
         typography = Typography,
         shapes = Shapes,
         content = {
-            Box(modifier = Modifier.fillMaxSize().background(brush = backgroundGradient)) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(brush = backgroundGradient)) {
                 content()
             }
         }
