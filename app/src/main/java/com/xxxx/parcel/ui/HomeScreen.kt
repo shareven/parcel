@@ -455,7 +455,6 @@ fun List(
                             Spacer(modifier = Modifier.height(8.dp))
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     result.smsDataList.forEach { smsData ->

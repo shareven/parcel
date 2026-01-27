@@ -375,7 +375,7 @@ fun App(
                     FailSmsScreen(viewModel, navController, readAndParseSms)
                 }
                 composable("success_sms") {
-                    SuccessSmsScreen(viewModel, navController, readAndParseSms)
+                    SuccessSmsScreen(viewModel, navController,  readAndParseSms)
                 }
                 composable("about") {
                     AboutScreen(navController)
