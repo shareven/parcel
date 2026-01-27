@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.navigation.NavType
@@ -53,12 +54,17 @@ import java.net.URLDecoder
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Build
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.xxxx.parcel.widget.ParcelWidgetXL
 import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.ui.LogScreen
 
 
 class MainActivity : ComponentActivity() {
+    private val hasPermissionState = mutableStateOf(false)
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
@@ -69,6 +75,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        hasPermissionState.value = PermissionUtil.hasSmsPermissions(this)
 
         viewModel = ParcelViewModel(smsParser, applicationContext)
 
@@ -78,6 +85,7 @@ class MainActivity : ComponentActivity() {
         ) { permissions ->
             val allGranted = permissions.values.all { it }
             if (allGranted) {
+                hasPermissionState.value = true
                 readAndParseSms()
                 startSmsDeletionMonitoring()
             } else {
@@ -104,6 +112,7 @@ class MainActivity : ComponentActivity() {
             App(
                 context,
                 viewModel,
+                hasPermissionState.value,
                 guideToSettings = { guideToSettings() },
                 readAndParseSms = { readAndParseSms() },
                 updateAllWidget = { updateAllWidget() },
@@ -165,22 +174,28 @@ class MainActivity : ComponentActivity() {
     }
 
     fun readAndParseSms() {
-        try {
-            val context = applicationContext
-            val daysFilter = viewModel.timeFilterIndex.value
-            val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
-            val customSmsList = getCustomSmsByTimeFilter(context, daysFilter)
+        lifecycleScope.launch {
+            try {
+                val context = applicationContext
+                val daysFilter = viewModel.timeFilterIndex.value
+                val (smsList, customSmsList) = withContext(Dispatchers.IO) {
+                    val smsList = SmsUtil.readSmsByTimeFilter(context, daysFilter)
+                    val customSmsList = getCustomSmsByTimeFilter(context, daysFilter)
+                    Pair(smsList, customSmsList)
+                }
 
-            viewModel.getAllMessageWithCustom(smsList, customSmsList)
+                viewModel.getAllMessageWithCustom(smsList, customSmsList)
 
-            updateAllWidget()
-        } catch (e: SecurityException) {
-            Log.e("MainActivity", "Failed to read SMS: ${e.message}")
+                updateAllWidget()
+            } catch (e: SecurityException) {
+                Log.e("MainActivity", "Failed to read SMS: ${e.message}")
+            }
         }
     }
 
 
     private fun init() {
+        hasPermissionState.value = PermissionUtil.hasSmsPermissions(this)
         if (PermissionUtil.isMIUI()) {
             //小米手机 MIUI widget启用
             val component = ComponentName(context, ParcelWidgetMiui::class.java)
@@ -213,16 +228,6 @@ class MainActivity : ComponentActivity() {
             readAndParseSms()
             startSmsDeletionMonitoring()
         }
-        setContent {
-            App(
-                context,
-                viewModel,
-                guideToSettings = { guideToSettings() },
-                readAndParseSms = { readAndParseSms() },
-                updateAllWidget = { updateAllWidget() },
-            )
-        }
-
         // 注册接收“自定义短信已添加”的广播，统一触发 UI 刷新
         registerCustomSmsAddedReceiver()
 
@@ -299,6 +304,7 @@ class MainActivity : ComponentActivity() {
 fun App(
     context: Context,
     viewModel: ParcelViewModel,
+    hasPermission: Boolean,
     guideToSettings: () -> Unit,
     readAndParseSms: () -> Unit,
     updateAllWidget: () -> Unit,
@@ -318,6 +324,7 @@ fun App(
                         context,
                         viewModel,
                         navController,
+                        hasPermission,
                         onCallBack = { guideToSettings() },
                         updateAllWidget,
                     )

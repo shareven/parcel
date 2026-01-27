@@ -41,7 +41,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +57,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.MainActivity
-import com.xxxx.parcel.util.PermissionUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -69,8 +67,8 @@ import com.xxxx.parcel.viewmodel.ParcelViewModel
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
-import android.os.Build
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,15 +77,13 @@ fun HomeScreen(
     context: Context,
     viewModel: ParcelViewModel,
     navController: NavController,
+    hasPermission: Boolean,
     onCallBack: () -> Unit,
-    updateAllWidget: () -> Unit
+    updateAllWidget: () -> Unit,
 ) {
 
 
-    var hasPermission by remember { mutableStateOf(PermissionUtil.hasSmsPermissions(context)) }
-    LaunchedEffect(hasPermission) {
-        hasPermission = PermissionUtil.hasSmsPermissions(context)
-    }
+
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -288,6 +284,7 @@ fun HomeScreen(
 }
 
 
+@SuppressLint("MutableCollectionMutableState")
 @Composable
 fun List(
     context: Context,
@@ -295,7 +292,7 @@ fun List(
     navController: NavController,
     updateAllWidget: () -> Unit,
     showCompleted: Boolean,
-    showCodeTime: Boolean
+    showCodeTime: Boolean,
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
@@ -441,7 +438,7 @@ fun List(
                     }
 
                     val isExpanded = expandedStates.value[result.address] ?: true
-                    val isAllCompleted = result.smsDataList.find({ !it.isCompleted }) == null
+                    val isAllCompleted = result.smsDataList.find { !it.isCompleted } == null
                     androidx.compose.animation.AnimatedVisibility(
                         visible = if (showCompleted) (isExpanded || !isAllCompleted) else (!isAllCompleted),
                         modifier = Modifier.fillMaxWidth()
@@ -518,14 +515,14 @@ private fun openTaobaoIdentityEntry(context: Context) {
     )
     for (u in candidates) {
         try {
-            val i = Intent(Intent.ACTION_VIEW, Uri.parse(u))
+            val i = Intent(Intent.ACTION_VIEW, u.toUri())
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(i)
             return
         } catch (_: Exception) {}
     }
     try {
-        val i = Intent(Intent.ACTION_VIEW, Uri.parse(lastmile))
+        val i = Intent(Intent.ACTION_VIEW, lastmile.toUri())
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         i.setClassName(pkg, "com.taobao.browser.BrowserActivity")
         context.startActivity(i)
@@ -544,7 +541,7 @@ private fun openPddIdentityEntry(context: Context) {
     )
     for (u in schemes) {
         try {
-            val i = Intent(Intent.ACTION_VIEW, Uri.parse(u))
+            val i = Intent(Intent.ACTION_VIEW, u.toUri())
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(i)
             return
@@ -563,7 +560,7 @@ private fun openPddIdentityEntry(context: Context) {
 private fun saveShowCompleted(context: Context, show: Boolean) {
     try {
         val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("show_completed_codes", show).apply()
+        prefs.edit { putBoolean("show_completed_codes", show) }
     } catch (_: Exception) {
     }
 }
@@ -580,7 +577,7 @@ private fun getShowCompleted(context: Context): Boolean {
 private fun saveShowCodeTime(context: Context, show: Boolean) {
     try {
         val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("show_code_time", show).apply()
+        prefs.edit { putBoolean("show_code_time", show) }
     } catch (_: Exception) {
     }
 }
