@@ -17,6 +17,8 @@ import com.xxxx.parcel.model.SmsModel
 import com.xxxx.parcel.util.addCustomSms
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.getCustomList
+import com.xxxx.parcel.util.getPreferLockerAddress
+import com.xxxx.parcel.util.loadCustomRulesToParser
 import com.xxxx.parcel.util.isMainSwitchEnabled
 import com.xxxx.parcel.util.isAppSwitchEnabled
 import com.xxxx.parcel.util.getTitleForPackage
@@ -220,16 +222,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
         if (content.isBlank()) return false
         return try {
             val parser = SmsParser()
-            // 加载自定义地址/取件码/忽略关键词规则
-            getCustomList(context, "address").forEach { rule ->
-                if (rule.isNotBlank()) parser.addCustomAddressPattern(rule)
-            }
-            getCustomList(context, "code").forEach { pattern ->
-                if (pattern.isNotBlank()) parser.addCustomCodePattern(pattern)
-            }
-            getCustomList(context, "ignoreKeywords").forEach { kw ->
-                if (kw.isNotBlank()) parser.addIgnoreKeyword(kw)
-            }
+            loadCustomRulesToParser(context, parser)
             val result = parser.parseSms(content)
             result.success
         } catch (e: Exception) {

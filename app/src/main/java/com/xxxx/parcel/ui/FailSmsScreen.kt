@@ -97,7 +97,7 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController,readA
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "${dateToString(message.timestamp)}",
+                            text = dateToString(message.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )

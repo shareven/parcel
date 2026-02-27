@@ -27,7 +27,6 @@ import androidx.compose.material3.Button
 import com.xxxx.parcel.R
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,18 +64,12 @@ import java.util.Locale
 import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
+import com.xxxx.parcel.util.getPreferLockerAddress
 import com.xxxx.parcel.viewmodel.ParcelViewModel
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.foundation.background
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
@@ -102,6 +95,7 @@ fun HomeScreen(
     var showCompleted by remember { mutableStateOf(getShowCompleted(context)) }
     var showCodeTime by remember { mutableStateOf(getShowCodeTime(context)) }
     var isHorizontalLayout by remember { mutableStateOf(getHorizontalLayout(context)) }
+    var preferLockerAddress by remember { mutableStateOf(getPreferLockerAddress(context)) }
     val timeFilterOptions = listOf(
         "全部",
         "今天",
@@ -173,6 +167,27 @@ fun HomeScreen(
                             Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "菜单")
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+
+                            DropdownMenuItem(
+                                text = { Text(if (preferLockerAddress) "不优先显示几号柜" else "优先显示几号柜") },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !preferLockerAddress
+                                    savePreferLockerAddress(context, new)
+                                    preferLockerAddress = new
+                                    viewModel.setPreferLockerAddress(new)
+                                    (context as MainActivity).readAndParseSms()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (isHorizontalLayout) "切换为纵向地址" else "切换为横向地址") },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !isHorizontalLayout
+                                    saveHorizontalLayout(context, new)
+                                    isHorizontalLayout = new
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(if (showCompleted) "隐藏已取件的码" else "显示已取件的码") },
                                 onClick = {
@@ -189,15 +204,6 @@ fun HomeScreen(
                                     val new = !showCodeTime
                                     saveShowCodeTime(context, new)
                                     showCodeTime = new
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(if (isHorizontalLayout) "切换为纵向地址" else "切换为横向地址") },
-                                onClick = {
-                                    showMenu = false
-                                    val new = !isHorizontalLayout
-                                    saveHorizontalLayout(context, new)
-                                    isHorizontalLayout = new
                                 }
                             )
                             DropdownMenuItem(
@@ -513,7 +519,15 @@ fun HorizontalList(
                             pagerState.animateScrollToPage(index)
                         }
                     },
-                    text = { Text(data.address) }
+                    text = {
+                        Text(
+                            text = data.address,
+                            color = if (pagerState.currentPage == index) 
+                                MaterialTheme.colorScheme.onSurface 
+                            else 
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 )
             }
         }
@@ -782,5 +796,13 @@ private fun getHorizontalLayout(context: Context): Boolean {
         prefs.getBoolean("horizontal_layout", false)
     } catch (_: Exception) {
         false
+    }
+}
+
+private fun savePreferLockerAddress(context: Context, prefer: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit { putBoolean("prefer_locker_address", prefer) }
+    } catch (_: Exception) {
     }
 }

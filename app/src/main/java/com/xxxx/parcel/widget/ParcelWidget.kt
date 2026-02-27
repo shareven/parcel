@@ -6,22 +6,18 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
 import com.xxxx.parcel.util.SmsProcessor
 import com.xxxx.parcel.util.getCustomList
-import com.xxxx.parcel.util.getCustomSmsByTimeFilter
 import com.xxxx.parcel.util.SmsParser
-import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.util.getAllSaveData
+import com.xxxx.parcel.util.loadCustomRulesToParser
 import com.xxxx.parcel.util.addLog
 import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -132,9 +128,7 @@ class ParcelWidget : AppWidgetProvider() {
                 populateWidgetData(context, appWidgetManager, appWidgetId, parcels)
             } else {
                 val parser = SmsParser()
-                getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
-                getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
-                getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
+                loadCustomRulesToParser(context, parser)
                 val completedIds = getCustomList(context, "completedIds").toList()
                 val daysFilter = getIndex(context)
 

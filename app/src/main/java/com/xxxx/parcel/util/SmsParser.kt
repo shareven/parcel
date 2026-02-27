@@ -5,6 +5,9 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 class SmsParser {
+    // 是否优先匹配快递柜地址
+    var preferLockerAddress: Boolean = true
+
     // 使用正则表达式来匹配地址和取件码（1个或多个取件码）优先匹配快递柜
     private val lockerPattern: Pattern =
         Pattern.compile("""(?i)([0-9]+)号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)""")
@@ -50,9 +53,10 @@ class SmsParser {
 
         // 如果自定义规则没有找到，优先匹配柜号地址，其次默认规则
         if (foundAddress.isEmpty()) {
-            val lockerMatcher: Matcher = lockerPattern.matcher(sms)
-
-            foundAddress = if (lockerMatcher.find()) lockerMatcher.group().toString() ?: "" else ""
+            if (preferLockerAddress) {
+                val lockerMatcher: Matcher = lockerPattern.matcher(sms)
+                foundAddress = if (lockerMatcher.find()) lockerMatcher.group().toString() ?: "" else ""
+            }
 
             if (foundAddress.isEmpty()) {
                 val addressMatcher: Matcher = addressPattern.matcher(sms)

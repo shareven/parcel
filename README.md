@@ -24,7 +24,7 @@
 
 # 📲 下载 | Download
 
-> 最新版本：v1.0.47
+> 最新版本：v1.0.48
 
 | 渠道 | 链接 |
 |------|------|
@@ -62,13 +62,14 @@
 
 <div align="center">
 
-<img src="show1.jpg" width="180">
-<img src="show2.jpg" width="180">
-<img src="show6.jpg" width="180">
-
-<img src="show3.jpg" width="180">
-<img src="show4.jpg" width="180">
-<img src="show5.jpg" width="180">
+<img src="./show-img/show1.jpg" width="180">
+<img src="./show-img/show2.jpg" width="180">
+<img src="./show-img/show3.jpg" width="180">
+<img src="./show-img/show4.jpg" width="180">
+<img src="./show-img/show5.jpg" width="180">
+<img src="./show-img/show6.jpg" width="180">
+<img src="./show-img/show7.jpg" width="180">
+<img src="./show-img/show8.jpg" width="180">
 
 </div>
 

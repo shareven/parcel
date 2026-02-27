@@ -125,6 +125,10 @@ class ParcelViewModel(
         smsParser.clearAllCustomPatterns()
     }
 
+    fun setPreferLockerAddress(enabled: Boolean) {
+        smsParser.preferLockerAddress = enabled
+    }
+
 }
 
 

@@ -11,6 +11,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 
+fun loadCustomRulesToParser(context: Context, parser: SmsParser) {
+    getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
+    getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
+    getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
+    parser.preferLockerAddress = getPreferLockerAddress(context)
+}
+
 
 // 保存时间index
 fun saveIndex(context: Context, index: Int) {
@@ -78,6 +85,7 @@ fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
     val completedIds = getCustomList(context, "completedIds").toMutableList()
     val ignoreKeywords = getCustomList(context, "ignoreKeywords").toMutableList()
     val timeFilterIndex = getIndex(context)
+    val preferLockerAddress = getPreferLockerAddress(context)
 
     listAddr.forEach {
         viewModel.addCustomAddressPattern(it)
@@ -90,6 +98,16 @@ fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
     }
     viewModel.setTimeFilterIndex(timeFilterIndex)
     viewModel.setAllCompletedIds(completedIds)
+    viewModel.setPreferLockerAddress(preferLockerAddress)
+}
+
+fun getPreferLockerAddress(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("prefer_locker_address", true)
+    } catch (_: Exception) {
+        true
+    }
 }
 
 
@@ -371,9 +389,7 @@ fun clearAllLogs(context: Context) {
 
 fun hasCustomSameDayCode(context: Context, content: String): Boolean {
     val parser = SmsParser()
-    getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
-    getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
-    getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
+    loadCustomRulesToParser(context, parser)
     val r = parser.parseSms(content)
     if (!r.success) return false
     val recent = getCustomSmsByTimeFilter(context, 1)
