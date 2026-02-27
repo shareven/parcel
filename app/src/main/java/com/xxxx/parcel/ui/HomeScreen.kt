@@ -46,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.MainActivity
+import com.xxxx.parcel.model.ParcelData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -64,6 +66,17 @@ import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.viewmodel.ParcelViewModel
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.foundation.background
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
@@ -83,12 +96,12 @@ fun HomeScreen(
 ) {
 
 
-
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     var showCompleted by remember { mutableStateOf(getShowCompleted(context)) }
     var showCodeTime by remember { mutableStateOf(getShowCodeTime(context)) }
+    var isHorizontalLayout by remember { mutableStateOf(getHorizontalLayout(context)) }
     val timeFilterOptions = listOf(
         "全部",
         "今天",
@@ -160,15 +173,15 @@ fun HomeScreen(
                             Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "菜单")
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(if (showCompleted) "隐藏已取件的码" else "显示已取件的码") },
-                                    onClick = {
-                                        showMenu = false
-                                        val new = !showCompleted
-                                        saveShowCompleted(context, new)
-                                        showCompleted = new
-                                    }
-                                )
+                            DropdownMenuItem(
+                                text = { Text(if (showCompleted) "隐藏已取件的码" else "显示已取件的码") },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !showCompleted
+                                    saveShowCompleted(context, new)
+                                    showCompleted = new
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(if (showCodeTime) "隐藏时间" else "显示时间") },
                                 onClick = {
@@ -176,6 +189,15 @@ fun HomeScreen(
                                     val new = !showCodeTime
                                     saveShowCodeTime(context, new)
                                     showCodeTime = new
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (isHorizontalLayout) "切换为纵向地址" else "切换为横向地址") },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !isHorizontalLayout
+                                    saveHorizontalLayout(context, new)
+                                    isHorizontalLayout = new
                                 }
                             )
                             DropdownMenuItem(
@@ -246,7 +268,15 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (hasPermission) List(context, viewModel, navController, updateAllWidget, showCompleted, showCodeTime) else
+            if (hasPermission) List(
+                context = context,
+                viewModel = viewModel,
+                navController = navController,
+                updateAllWidget = updateAllWidget,
+                showCompleted = showCompleted,
+                showCodeTime = showCodeTime,
+                isHorizontalLayout = isHorizontalLayout,
+            ) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -293,6 +323,239 @@ fun HomeScreen(
 
 @SuppressLint("MutableCollectionMutableState")
 @Composable
+fun AddressCard(
+    context: Context,
+    viewModel: ParcelViewModel,
+    navController: NavController,
+    updateAllWidget: () -> Unit,
+    showCompleted: Boolean,
+    showCodeTime: Boolean,
+    parcelData: ParcelData,
+    expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
+    isExpanded: Boolean,
+) {
+    val isAllCompleted = parcelData.smsDataList.find { !it.isCompleted } == null
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(horizontal = 8.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                IconButton(
+                    modifier = Modifier.size(32.dp),
+                    onClick = {
+                        navController.navigate("add_custom_sms/${parcelData.address}")
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "添加自定义取件码",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "${parcelData.address}（${parcelData.num}）",
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable {
+                            expandedStates.value = expandedStates.value.toMutableMap().apply {
+                                put(parcelData.address, !isExpanded)
+                            }
+                        }
+                )
+            }
+
+            IconButton(
+                modifier = Modifier.size(36.dp),
+                onClick = {
+                    if (parcelData.num > 0) {
+                        val smsList = parcelData.smsDataList
+                            .filterNot { it.isCompleted }
+                            .map { it.sms }
+                        addCompletedIds(context, viewModel, smsList)
+                        updateAllWidget()
+                    }
+                },
+                enabled = parcelData.num > 0
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = "标记取件",
+                    tint = if (parcelData.num > 0) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = if (showCompleted) (isExpanded || !isAllCompleted) else (!isAllCompleted),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        parcelData.smsDataList.forEach { smsData ->
+                            if (((!isExpanded) && smsData.isCompleted) || ((!showCompleted) && smsData.isCompleted)) {
+                            } else {
+                                Box(modifier = Modifier.padding(6.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = smsData.code,
+                                            textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                            color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
+                                            style = MaterialTheme.typography.titleLarge.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            modifier = Modifier
+                                                .clickable {
+                                                    if (smsData.isCompleted) {
+                                                        removeCompletedId(
+                                                            context,
+                                                            viewModel,
+                                                            smsData.sms
+                                                        )
+                                                    } else {
+                                                        addCompletedIds(
+                                                            context,
+                                                            viewModel,
+                                                            listOf(smsData.sms)
+                                                        )
+                                                    }
+                                                    updateAllWidget()
+                                                }
+                                        )
+                                        if (showCodeTime) {
+                                            val sdf = remember {
+                                                SimpleDateFormat(
+                                                    "yyyy-MM-dd HH:mm",
+                                                    Locale.getDefault()
+                                                )
+                                            }
+                                            Text(
+                                                text = sdf.format(Date(smsData.sms.timestamp)),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.6f
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+fun HorizontalList(
+    context: Context,
+    viewModel: ParcelViewModel,
+    navController: NavController,
+    updateAllWidget: () -> Unit,
+    showCompleted: Boolean,
+    showCodeTime: Boolean,
+    parcelsData: List<ParcelData>,
+    expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+) {
+    val pagerState = rememberPagerState(
+        initialPage = selectedTabIndex,
+        pageCount = { parcelsData.size }
+    )
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(pagerState.currentPage) {
+        onTabSelected(pagerState.currentPage)
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        ScrollableTabRow(
+            selectedTabIndex = pagerState.currentPage,
+            modifier = Modifier.fillMaxWidth(),
+            edgePadding = 16.dp,
+        ) {
+            parcelsData.forEachIndexed { index, data ->
+                Tab(
+                    selected = pagerState.currentPage == index,
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
+                    text = { Text(data.address) }
+                )
+            }
+        }
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+        ) { page ->
+            val parcel = parcelsData[page]
+            val isExpanded = expandedStates.value[parcel.address] ?: true
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally
+            )
+            {
+                item {
+
+                    AddressCard(
+                        context = context,
+                        viewModel = viewModel,
+                        navController = navController,
+                        updateAllWidget = updateAllWidget,
+                        showCompleted = showCompleted,
+                        showCodeTime = showCodeTime,
+                        parcelData = parcel,
+                        expandedStates = expandedStates,
+                        isExpanded = isExpanded,
+                    )
+
+                }
+            }
+        }
+    }
+}
+
+@SuppressLint("MutableCollectionMutableState")
+@Composable
 fun List(
     context: Context,
     viewModel: ParcelViewModel,
@@ -300,9 +563,37 @@ fun List(
     updateAllWidget: () -> Unit,
     showCompleted: Boolean,
     showCodeTime: Boolean,
+    isHorizontalLayout: Boolean = false,
+    selectedTabIndex: Int = 0,
+    onTabSelected: (Int) -> Unit = {},
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
+    var currentTabIndex by remember { mutableStateOf(selectedTabIndex) }
+    val timeFilterIndex by viewModel.timeFilterIndex.collectAsState()
+
+    LaunchedEffect(timeFilterIndex) {
+        currentTabIndex = 0
+    }
+
+    if (isHorizontalLayout && parcelsData.isNotEmpty()) {
+        HorizontalList(
+            context = context,
+            viewModel = viewModel,
+            navController = navController,
+            updateAllWidget = updateAllWidget,
+            showCompleted = showCompleted,
+            showCodeTime = showCodeTime,
+            parcelsData = parcelsData,
+            expandedStates = expandedStates,
+            selectedTabIndex = currentTabIndex,
+            onTabSelected = { index ->
+                currentTabIndex = index
+                onTabSelected(index)
+            },
+        )
+        return
+    }
 
     if (parcelsData.isEmpty()) Column(
         modifier = Modifier
@@ -372,151 +663,27 @@ fun List(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             items(parcelsData) { result ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .padding(horizontal = 8.dp),
-                ) {
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            // 添加+按钮
-                            IconButton(
-                                modifier = Modifier.size(32.dp),
-                                onClick = {
-                                    navController.navigate("add_custom_sms/${result.address}")
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Add,
-                                    contentDescription = "添加自定义取件码",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Text(
-                                text = "${result.address}（${result.num}）",
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable {
-                                        val currentExpanded = expandedStates.value[result.address] ?: true
-                                        expandedStates.value = expandedStates.value.toMutableMap().apply {
-                                            put(result.address, !currentExpanded)
-                                        }
-                                    }
-                            )
-                        }
-
-                        IconButton(
-                            modifier = Modifier.size(36.dp),
-                            onClick = {
-                                if (result.num > 0) {
-                                    val smsList = result.smsDataList
-                                        .filterNot { it.isCompleted }
-                                        .map { it.sms }
-                                    addCompletedIds(context, viewModel, smsList)
-                                    updateAllWidget()
-                                }
-                            },
-                            enabled = result.num > 0
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CheckCircle,
-                                contentDescription = "标记取件",
-                                tint = if (result.num > 0) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
-
-                    val isExpanded = expandedStates.value[result.address] ?: true
-                    val isAllCompleted = result.smsDataList.find { !it.isCompleted } == null
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = if (showCompleted) (isExpanded || !isAllCompleted) else (!isAllCompleted),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-
-                        Column {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    result.smsDataList.forEach { smsData ->
-                                        if (((!isExpanded) && smsData.isCompleted) || ((!showCompleted) && smsData.isCompleted)) {
-                                            // skip displaying this completed smsData based on expand state or global setting
-                                        } else {
-                                            Box(modifier = Modifier.padding(6.dp)) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = smsData.code,
-                                                    textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                                    color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
-                                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                                    modifier = Modifier
-                                                        .clickable {
-                                                            if (smsData.isCompleted) {
-                                                                removeCompletedId(
-                                                                    context,
-                                                                    viewModel,
-                                                                    smsData.sms
-                                                                )
-                                                            } else {
-                                                                addCompletedIds(
-                                                                    context,
-                                                                    viewModel,
-                                                                    listOf(smsData.sms)
-                                                                )
-                                                            }
-                                                            updateAllWidget()
-                                                        }
-                                                )
-                                                if (showCodeTime) {
-                                                    val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
-                                                    Text(
-                                                        text = sdf.format(Date(smsData.sms.timestamp)),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                                    )
-                                                }
-                                            }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
+                val isExpanded = expandedStates.value[result.address] ?: true
+                AddressCard(
+                    context = context,
+                    viewModel = viewModel,
+                    navController = navController,
+                    updateAllWidget = updateAllWidget,
+                    showCompleted = showCompleted,
+                    showCodeTime = showCodeTime,
+                    parcelData = result,
+                    expandedStates = expandedStates,
+                    isExpanded = isExpanded,
+                )
             }
         }
 }
 
 private fun openTaobaoIdentityEntry(context: Context) {
     val pkg = "com.taobao.taobao"
-    val lastmile = "https://pages-fast.m.taobao.com/wow/z/uniapp/1100333/last-mile-fe/m-end-school-tab/home"
-   val candidates = listOf(
+    val lastmile =
+        "https://pages-fast.m.taobao.com/wow/z/uniapp/1100333/last-mile-fe/m-end-school-tab/home"
+    val candidates = listOf(
         "tbopen://m.taobao.com/tbopen/index.html?h5Url=" + Uri.encode(lastmile),
     )
     for (u in candidates) {
@@ -525,7 +692,8 @@ private fun openTaobaoIdentityEntry(context: Context) {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(i)
             return
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
     try {
         val i = Intent(Intent.ACTION_VIEW, lastmile.toUri())
@@ -533,7 +701,8 @@ private fun openTaobaoIdentityEntry(context: Context) {
         i.setClassName(pkg, "com.taobao.browser.BrowserActivity")
         context.startActivity(i)
         return
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+    }
 
 
 }
@@ -551,7 +720,8 @@ private fun openPddIdentityEntry(context: Context) {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(i)
             return
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
     try {
         val i = context.packageManager.getLaunchIntentForPackage(pkg)
@@ -560,7 +730,8 @@ private fun openPddIdentityEntry(context: Context) {
             context.startActivity(i)
             return
         }
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+    }
 }
 
 private fun saveShowCompleted(context: Context, show: Boolean) {
@@ -594,5 +765,22 @@ private fun getShowCodeTime(context: Context): Boolean {
         prefs.getBoolean("show_code_time", true)
     } catch (_: Exception) {
         true
+    }
+}
+
+private fun saveHorizontalLayout(context: Context, horizontal: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit { putBoolean("horizontal_layout", horizontal) }
+    } catch (_: Exception) {
+    }
+}
+
+private fun getHorizontalLayout(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("horizontal_layout", false)
+    } catch (_: Exception) {
+        false
     }
 }
