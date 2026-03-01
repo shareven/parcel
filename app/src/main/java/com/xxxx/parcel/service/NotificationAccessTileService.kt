@@ -6,7 +6,6 @@ import android.content.ComponentName
 import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.util.getMainSwitch
 import com.xxxx.parcel.util.setMainSwitch
 import android.content.Intent
@@ -33,7 +32,7 @@ class NotificationAccessTileService : TileService() {
         val hasAccess = isNotificationAccessGranted(this)
         val mainEnabled = getMainSwitch(this)
         if (!hasAccess) {
-            val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivityAndCollapse(intent)
         } else {
             setMainSwitch(this, !mainEnabled)

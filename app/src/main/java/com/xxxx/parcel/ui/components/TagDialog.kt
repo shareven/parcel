@@ -58,14 +58,22 @@ import androidx.compose.ui.window.DialogProperties
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAllTags
+import com.xxxx.parcel.util.getCustomSmsByTimeFilter
+import com.xxxx.parcel.util.loadCustomRulesToParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private fun getAllAddresses(context: android.content.Context): List<String> {
     return try {
         val allSms = SmsUtil.readAllSms(context)
+        val customSms = getCustomSmsByTimeFilter(context, 0)
+        val allMessages = allSms + customSms
         val parser = SmsParser()
-        allSms.mapNotNull { sms ->
+        loadCustomRulesToParser(context, parser)
+        // 获取所有地址时，不需要显示几号柜
+        parser.preferLockerAddress = false
+
+        allMessages.mapNotNull { sms ->
             val result = parser.parseSms(sms.body)
             if (result.success) result.address else null
         }.distinct().sorted()

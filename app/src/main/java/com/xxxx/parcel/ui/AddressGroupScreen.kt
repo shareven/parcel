@@ -56,6 +56,8 @@ import com.xxxx.parcel.ui.components.TagDialog
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.SmsUtil
 import com.xxxx.parcel.util.getAddressMappings
+import com.xxxx.parcel.util.getCustomSmsByTimeFilter
+import com.xxxx.parcel.util.loadCustomRulesToParser
 import com.xxxx.parcel.util.removeAddressMapping
 import com.xxxx.parcel.util.saveAddressMapping
 import kotlinx.coroutines.Dispatchers
@@ -90,8 +92,14 @@ fun AddressGroupScreen(
                 addressMappings = mappings
                 val addresses = withContext(Dispatchers.IO) {
                     val allSms = SmsUtil.readAllSms(context)
+                    val customSms = getCustomSmsByTimeFilter(context, 0)
+                    val allMessages = allSms + customSms
                     val parser = SmsParser()
-                    allSms.mapNotNull { sms ->
+                    loadCustomRulesToParser(context, parser)
+                    // 获取所有地址时，不需要显示几号柜
+                    parser.preferLockerAddress = false
+
+                    allMessages.mapNotNull { sms ->
                         val result = parser.parseSms(sms.body)
                         if (result.success) result.address else null
                     }.distinct().sorted()

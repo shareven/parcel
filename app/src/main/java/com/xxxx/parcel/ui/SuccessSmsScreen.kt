@@ -139,7 +139,7 @@ fun SuccessSmsScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.Top
                             ) {
                                 Text(
                                     text = "地址: ",
