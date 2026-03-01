@@ -73,6 +73,7 @@ import androidx.compose.material3.ScrollableTabRow
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
+import android.text.Layout
 import androidx.core.net.toUri
 import androidx.core.content.edit
 
@@ -282,6 +283,7 @@ fun HomeScreen(
                 showCompleted = showCompleted,
                 showCodeTime = showCodeTime,
                 isHorizontalLayout = isHorizontalLayout,
+                preferLockerAddress = preferLockerAddress,
             ) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -339,6 +341,7 @@ fun AddressCard(
     parcelData: ParcelData,
     expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
     isExpanded: Boolean,
+    preferLockerAddress: Boolean,
 ) {
     val isAllCompleted = parcelData.smsDataList.find { !it.isCompleted } == null
 
@@ -455,20 +458,31 @@ fun AddressCard(
                                                     updateAllWidget()
                                                 }
                                         )
-                                        if (showCodeTime) {
-                                            val sdf = remember {
-                                                SimpleDateFormat(
-                                                    "yyyy-MM-dd HH:mm",
-                                                    Locale.getDefault()
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            if (!preferLockerAddress && smsData.lockerNumber.isNotEmpty()) {
+                                                Text(
+                                                    text = "${smsData.lockerNumber}号柜",
+                                                    style = MaterialTheme.typography.bodySmall.copy(
+                                                        fontWeight = FontWeight.Bold
+                                                    ),
+                                                    color =if (smsData.isCompleted)MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
-                                            Text(
-                                                text = sdf.format(Date(smsData.sms.timestamp)),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                    alpha = 0.6f
+                                            if (showCodeTime) {
+                                                val sdf = remember {
+                                                    SimpleDateFormat(
+                                                        "yyyy-MM-dd HH:mm",
+                                                        Locale.getDefault()
+                                                    )
+                                                }
+                                                Text(
+                                                    text = sdf.format(Date(smsData.sms.timestamp)),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSecondary
                                                 )
-                                            )
+                                            }
                                         }
                                     }
                                 }
@@ -494,6 +508,7 @@ fun HorizontalList(
     expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
+    preferLockerAddress: Boolean,
 ) {
     val pagerState = rememberPagerState(
         initialPage = selectedTabIndex,
@@ -560,6 +575,7 @@ fun HorizontalList(
                         parcelData = parcel,
                         expandedStates = expandedStates,
                         isExpanded = isExpanded,
+                        preferLockerAddress = preferLockerAddress,
                     )
 
                 }
@@ -580,6 +596,7 @@ fun List(
     isHorizontalLayout: Boolean = false,
     selectedTabIndex: Int = 0,
     onTabSelected: (Int) -> Unit = {},
+    preferLockerAddress: Boolean,
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
@@ -605,6 +622,7 @@ fun List(
                 currentTabIndex = index
                 onTabSelected(index)
             },
+            preferLockerAddress = preferLockerAddress,
         )
         return
     }
@@ -688,6 +706,7 @@ fun List(
                     parcelData = result,
                     expandedStates = expandedStates,
                     isExpanded = isExpanded,
+                    preferLockerAddress = preferLockerAddress,
                 )
             }
         }

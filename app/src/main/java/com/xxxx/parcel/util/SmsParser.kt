@@ -9,10 +9,10 @@ class SmsParser {
     var preferLockerAddress: Boolean = true
 
     // 使用正则表达式来匹配地址和取件码（1个或多个取件码）优先匹配快递柜
-    private val lockerPattern: Pattern =
+    val lockerPattern: Pattern =
         Pattern.compile("""(?i)([0-9]+)号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)""")
     private val addressPattern: Pattern =
-        Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|,|，|。|$)\d*)""")
+        Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|快递点|门面|柜|,|，|。|$))""")
     private val codePattern: Pattern = Pattern.compile(
         """(?i)(取件码为|提货号为|取货码为|提货码为|取件码（|提货号（|取货码（|提货码（|取件码『|提货号『|取货码『|提货码『|取件码【|提货号【|取货码【|提货码【|取件码\(|提货号\(|取货码\(|提货码\(|取件码\[|提货号\[|取货码\[|提货码\[|取件码|提货号|取货码|提货码|凭|快递|京东|天猫|中通|顺丰|韵达|德邦|菜鸟|拼多多|EMS|闪送|美团|饿了么|盒马|叮咚买菜|UU跑腿|签收码|签收编号|操作码|提货编码|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[A-Za-z0-9\s-]{2,}(?:[，,、][A-Za-z0-9\s-]{2,})*"""
     )
@@ -23,7 +23,7 @@ class SmsParser {
     private val ignoreKeywords = mutableListOf<String>()
 
 
-    data class ParseResult(val address: String, val code: String, val success: Boolean)
+    data class ParseResult(val address: String, val code: String, val lockerNumber: String, val success: Boolean)
 
     fun parseSms(sms: String): ParseResult {
         var foundAddress = ""
@@ -32,7 +32,7 @@ class SmsParser {
         // 检查是否包含忽略关键词
         for (ignoreKeyword in ignoreKeywords) {
             if (ignoreKeyword.isNotBlank() && sms.contains(ignoreKeyword, ignoreCase = true)) {
-                return ParseResult("", "", false)
+                return ParseResult("", "", "", false)
             }
         }
 
@@ -71,6 +71,10 @@ class SmsParser {
             }
         }
 
+        // 始终提取柜号数字
+        val lockerMatcher: Matcher = lockerPattern.matcher(sms)
+        val lockerNumber = if (lockerMatcher.find()) lockerMatcher.group(1) ?: "" else ""
+
         if (foundCode.isEmpty()) {
             val codeMatcher: Matcher = codePattern.matcher(sms)
 
@@ -88,6 +92,7 @@ class SmsParser {
         return ParseResult(
             foundAddress,
             foundCode,
+            lockerNumber,
             foundAddress.isNotEmpty() && foundCode.isNotEmpty()
         )
     }

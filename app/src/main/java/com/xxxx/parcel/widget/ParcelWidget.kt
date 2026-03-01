@@ -10,6 +10,7 @@ import com.xxxx.parcel.util.SmsProcessor
 import com.xxxx.parcel.util.getCustomList
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.getIndex
+import com.xxxx.parcel.util.getPreferLockerAddress
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.util.getAllSaveData
@@ -165,10 +166,16 @@ class ParcelWidget : AppWidgetProvider() {
             var codeList6 = ""
 
             total = parcels.sumOf { it.num }
+            val preferLocker = getPreferLockerAddress(context)
             fun fill(idx: Int, setAddr: (String)->Unit, setCodes: (String)->Unit) {
                 val item = parcels.getOrNull(idx)
                 if (item != null && item.num > 0) {
-                    val codes = item.smsDataList.filter { !it.isCompleted }.map { it.code }.joinToString("\n")
+                    val codes = item.smsDataList.filter { !it.isCompleted }
+                        .map { 
+                            if (!preferLocker && it.lockerNumber.isNotEmpty()) "${it.code} • ${it.lockerNumber}号柜"
+                            else it.code 
+                        }
+                        .joinToString("\n")
                     setAddr(item.address + "（${item.num}）")
                     setCodes(codes)
                 } else {

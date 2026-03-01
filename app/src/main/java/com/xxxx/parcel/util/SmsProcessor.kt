@@ -54,12 +54,12 @@ object SmsProcessor {
                 // 获取分组用的地址（优先使用 tag）
                 val groupAddress = addressMappings[originalAddress] ?: originalAddress
                 
-                val smsData = SmsData(originalAddress, result.code, sms, combinedKey)
+                val smsData = SmsData(originalAddress, result.code, sms, combinedKey, false, result.lockerNumber)
                 successful.add(smsData)
 
                 // Grouping logic - use groupAddress for grouping
                 val existingParcel = parcelsMap[groupAddress]
-                val newItem = SmsData(originalAddress, result.code, sms, combinedKey)
+                val newItem = SmsData(originalAddress, result.code, sms, combinedKey, false, result.lockerNumber)
 
                 if (existingParcel != null) {
                     val existsSameDaySameAddrCode = existingParcel.smsDataList.any { existing ->
@@ -87,9 +87,15 @@ object SmsProcessor {
 
         val initialParcels = parcelsMap.values.toList()
 
-        // Sort parcel sms lists by code
+        // 先按字符串排序，然后有柜号的排前面，按柜号升序排列
         initialParcels.forEach { parcel ->
-            parcel.smsDataList.sortBy { x -> x.code }
+            parcel.smsDataList.sortWith(
+                compareBy(
+                    { it.lockerNumber.isEmpty() },
+                    { it.lockerNumber.toIntOrNull() ?: Int.MAX_VALUE },
+                    { it.code }
+                )
+            )
         }
 
         // Calculate num and isCompleted
