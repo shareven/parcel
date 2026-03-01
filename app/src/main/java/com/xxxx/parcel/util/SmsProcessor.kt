@@ -117,6 +117,9 @@ object SmsProcessor {
             }
 
             parcel.copy(smsDataList = newSmsDataList, num = newNum)
-        }.sortedByDescending { it.num }
+        }.sortedWith(
+            compareByDescending<ParcelData> { it.num > 0 }
+                .thenBy { it.address }
+        )
     }
 }
