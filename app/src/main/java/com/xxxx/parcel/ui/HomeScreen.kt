@@ -64,6 +64,7 @@ import java.util.Locale
 import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
+import com.xxxx.parcel.util.formatPickupCode
 import com.xxxx.parcel.util.getPreferLockerAddress
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import androidx.compose.foundation.pager.HorizontalPager
@@ -434,7 +435,7 @@ fun AddressCard(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = smsData.code,
+                                            text = formatPickupCode(smsData.code),
                                             textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                                             color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
                                             style = MaterialTheme.typography.titleLarge.copy(

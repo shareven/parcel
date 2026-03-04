@@ -11,6 +11,7 @@ import com.xxxx.parcel.util.getCustomList
 import com.xxxx.parcel.util.SmsParser
 import com.xxxx.parcel.util.getIndex
 import com.xxxx.parcel.util.getPreferLockerAddress
+import com.xxxx.parcel.util.formatPickupCode
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.R
 import com.xxxx.parcel.util.getAllSaveData
@@ -172,8 +173,9 @@ class ParcelWidget : AppWidgetProvider() {
                 if (item != null && item.num > 0) {
                     val codes = item.smsDataList.filter { !it.isCompleted }
                         .map { 
-                            if (!preferLocker && it.lockerNumber.isNotEmpty()) "${it.code} • ${it.lockerNumber}号柜"
-                            else it.code 
+                            val displayCode = formatPickupCode(it.code)
+                            if (!preferLocker && it.lockerNumber.isNotEmpty()) "$displayCode • ${it.lockerNumber}号柜"
+                            else displayCode 
                         }
                         .joinToString("\n")
                     setAddr(item.address + "（${item.num}）")

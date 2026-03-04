@@ -110,3 +110,11 @@ fun isSameDay(ts1: Long, ts2: Long): Boolean {
     return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR) &&
             c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR)
 }
+
+fun formatPickupCode(code: String): String {
+    val digitsOnly = code.filter { it.isDigit() }
+    if (digitsOnly.length >= 8) {
+        return digitsOnly.chunked(4).joinToString(" ")
+    }
+    return code
+}
