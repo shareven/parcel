@@ -442,6 +442,7 @@ fun AddressCard(
                                                 fontWeight = FontWeight.Bold
                                             ),
                                             modifier = Modifier
+                                                .weight(1f)
                                                 .clickable {
                                                     if (smsData.isCompleted) {
                                                         removeCompletedId(
