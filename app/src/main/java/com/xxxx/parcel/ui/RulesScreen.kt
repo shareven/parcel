@@ -93,7 +93,7 @@ fun RulesScreen(
                             navController.navigate("home")
                         }
                     ) {
-                        Text("清除所有自定规则")
+                        Text("清除所有规则")
                     }
                 }
             )

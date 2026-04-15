@@ -87,7 +87,7 @@ fun AddRuleScreen(
 
             Card(
                 modifier = Modifier
-                    .padding(8.dp)
+                    .padding(vertical = 8.dp)
             ) {
                 Column(
                     modifier = Modifier

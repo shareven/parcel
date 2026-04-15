@@ -87,12 +87,16 @@ fun SuccessSmsScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            "已解析的短信（${successSmsData.size}）"
+                            "已解析${successSmsData.size}条短信"
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", modifier = Modifier.size(if (isSeniorMode) 36.dp else 24.dp))
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                                modifier = Modifier.size(if (isSeniorMode) 36.dp else 24.dp)
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -105,7 +109,7 @@ fun SuccessSmsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = if (isSeniorMode) 12.dp else 16.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -114,7 +118,7 @@ fun SuccessSmsScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(vertical = 8.dp),
                     ) {
                         Column(
                             modifier = Modifier
@@ -187,7 +191,7 @@ fun SuccessSmsScreen(
                                     },
                                     shape = RoundedCornerShape(16.dp),
                                     color = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor =  MaterialTheme.colorScheme.onPrimaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                 ) {
                                     Text(
                                         text = tag,
@@ -242,9 +246,12 @@ fun SuccessSmsScreen(
                                         val encodedMsg = URLEncoder.encode(data.sms.body, "UTF-8")
                                         navController.navigate("add_rule?message=${encodedMsg}")
                                     },
-                                    modifier = Modifier.weight(2f)
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Text(text = "添加解析规则", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
+                                    Text(
+                                        text = "添加解析规则",
+                                        style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge
+                                    )
                                 }
 
                                 if (isCustomSms(data.sms)) {
@@ -253,18 +260,18 @@ fun SuccessSmsScreen(
                                             removeCustomSms(context, data.sms.id)
                                             readAndParseSms()
                                         },
-                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
                                             contentDescription = "删除",
                                             modifier = Modifier
                                                 .padding(end = 4.dp)
-                                                .size(if (isSeniorMode) 35.dp else 18.dp)
+                                                .size(18.dp)
                                         )
                                     }
                                 }
                             }
+
                         }
                     }
                 }

@@ -55,7 +55,7 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController, isSe
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("解析失败的短信（${failSmsData.size}）") },
+                title = { Text("解析失败${failSmsData.size}条短信") },
                 navigationIcon = {
                     IconButton(
                         onClick = { navController.navigateUp() },
@@ -70,7 +70,7 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController, isSe
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = if (isSeniorMode) 12.dp else 16.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -78,7 +78,7 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController, isSe
             items(failSmsData) { message ->
                 Card(
                     modifier = Modifier
-                        .padding(8.dp)
+                        .padding(vertical = 8.dp)
                         .fillMaxSize()
                 ) {
                     Column(
