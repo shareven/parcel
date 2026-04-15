@@ -75,6 +75,8 @@ import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
 import android.text.Layout
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.core.net.toUri
 import androidx.core.content.edit
 
@@ -82,13 +84,15 @@ import androidx.core.content.edit
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    context: Context,
-    viewModel: ParcelViewModel,
-    navController: NavController,
-    hasPermission: Boolean,
-    onCallBack: () -> Unit,
-    updateAllWidget: () -> Unit,
-) {
+        context: Context,
+        viewModel: ParcelViewModel,
+        navController: NavController,
+        hasPermission: Boolean,
+        onCallBack: () -> Unit,
+        updateAllWidget: () -> Unit,
+        isSeniorMode: Boolean,
+        onSeniorModeChanged: (Boolean) -> Unit,
+    ) {
 
 
     val sheetState = rememberModalBottomSheetState()
@@ -125,7 +129,7 @@ fun HomeScreen(
                         onClick = { showBottomSheet = true },
 
                         ) {
-                        Text(text = timeFilterOptions[selectedTimeFilterIndex])
+                        Text(text = timeFilterOptions[selectedTimeFilterIndex], style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge)
                     }
                 },
                 actions = {
@@ -141,12 +145,14 @@ fun HomeScreen(
                         onClick = { navController.navigate("success_sms") },
                     ) {
                         Text(
-                            text = successData.size.toString(),
-                            fontWeight = FontWeight.Bold
+                                text = successData.size.toString(),
+                                fontWeight = FontWeight.Bold,
+                                style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge
                         )
                     }
                     Spacer(Modifier.width(16.dp))
-                    TextButton(
+                    Button(
+                        contentPadding = PaddingValues(2.dp),
                         colors = ButtonColors(
                             containerColor = Color(0xFFAB1A65),
                             contentColor = Color.White,
@@ -156,8 +162,9 @@ fun HomeScreen(
                         onClick = { navController.navigate("fail_sms") },
                     ) {
                         Text(
-                            text = failedData.size.toString(),
-                            color = Color.White
+                                text = failedData.size.toString(),
+                                color = Color.White,
+                                style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge
                         )
                     }
 
@@ -166,12 +173,12 @@ fun HomeScreen(
                     var showMenu by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "菜单")
+                            Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "菜单", modifier = Modifier.size(if (isSeniorMode) 48.dp else 24.dp))
                         }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenu(modifier =if(isSeniorMode) Modifier.fillMaxWidth()else Modifier,expanded = showMenu, onDismissRequest = { showMenu = false }) {
 
                             DropdownMenuItem(
-                                text = { Text(if (preferLockerAddress) "不优先显示几号柜" else "优先显示几号柜") },
+                                text = {                                 Text(if (preferLockerAddress) "不优先显示几号柜" else "优先显示几号柜", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     val new = !preferLockerAddress
@@ -182,7 +189,7 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(if (isHorizontalLayout) "切换为纵向地址" else "切换为横向地址") },
+                                text = {                                 Text(if (isHorizontalLayout) "切换为纵向地址" else "切换为横向地址", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     val new = !isHorizontalLayout
@@ -191,7 +198,7 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(if (showCompleted) "隐藏已取件的码" else "显示已取件的码") },
+                                text = {                                 Text(if (showCompleted) "隐藏已取件的码" else "显示已取件的码", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     val new = !showCompleted
@@ -200,7 +207,7 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(if (showCodeTime) "隐藏时间" else "显示时间") },
+                                text = {                                 Text(if (showCodeTime) "隐藏时间" else "显示时间", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     val new = !showCodeTime
@@ -209,56 +216,64 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("添加自定义取件短信") },
+                                text = {                                 Text("添加自定义取件短信", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("add_custom_sms/ ")
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("地址归类") },
+                                text = { Text("地址归类", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("address_group")
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("规则列表") },
+                                text = { Text("规则列表", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("rules")
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("查看日志") },
+                                text = { Text("查看日志", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("logs")
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("监听第三方app通知") },
+                                text = { Text("监听第三方app通知", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("use_notification")
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("淘宝身份码") },
+                                text = { Text("淘宝身份码", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     openTaobaoIdentityEntry(context)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("拼多多身份码") },
+                                text = { Text("拼多多身份码", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     openPddIdentityEntry(context)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("关于") },
+                                text = {                                 Text(if (isSeniorMode) "关闭老人模式" else "开启老人模式", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !isSeniorMode
+                                    onSeniorModeChanged(new)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {                                 Text("关于", style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate("about")
@@ -285,6 +300,7 @@ fun HomeScreen(
                 showCodeTime = showCodeTime,
                 isHorizontalLayout = isHorizontalLayout,
                 preferLockerAddress = preferLockerAddress,
+                isSeniorMode = isSeniorMode
             ) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -307,6 +323,7 @@ fun HomeScreen(
                     Text(
                         text = option,
                         textAlign = TextAlign.Center,
+                        style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
@@ -333,17 +350,18 @@ fun HomeScreen(
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun AddressCard(
-    context: Context,
-    viewModel: ParcelViewModel,
-    navController: NavController,
-    updateAllWidget: () -> Unit,
-    showCompleted: Boolean,
-    showCodeTime: Boolean,
-    parcelData: ParcelData,
-    expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
-    isExpanded: Boolean,
-    preferLockerAddress: Boolean,
-) {
+        context: Context,
+        viewModel: ParcelViewModel,
+        navController: NavController,
+        updateAllWidget: () -> Unit,
+        showCompleted: Boolean,
+        showCodeTime: Boolean,
+        parcelData: ParcelData,
+        expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
+        isExpanded: Boolean,
+        preferLockerAddress: Boolean,
+        isSeniorMode: Boolean,
+    ) {
     val isAllCompleted = parcelData.smsDataList.find { !it.isCompleted } == null
 
     Column(
@@ -364,7 +382,7 @@ fun AddressCard(
                 modifier = Modifier.weight(1f)
             ) {
                 IconButton(
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(if (isSeniorMode) 48.dp else 32.dp),
                     onClick = {
                         navController.navigate("add_custom_sms/${parcelData.address}")
                     }
@@ -378,23 +396,23 @@ fun AddressCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                Text(
-                    text = "${parcelData.address}（${parcelData.num}）",
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable {
-                            expandedStates.value = expandedStates.value.toMutableMap().apply {
-                                put(parcelData.address, !isExpanded)
-                            }
-                        }
-                )
+                        Text(
+                            text = "${parcelData.address}（${parcelData.num}）",
+                            style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    expandedStates.value = expandedStates.value.toMutableMap().apply {
+                                        put(parcelData.address, !isExpanded)
+                                    }
+                                }
+                        )
             }
 
             IconButton(
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(if (isSeniorMode) 48.dp else 36.dp),
                 onClick = {
                     if (parcelData.num > 0) {
                         val smsList = parcelData.smsDataList
@@ -434,56 +452,61 @@ fun AddressCard(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = formatPickupCode(smsData.code),
-                                            textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                            color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
-                                            style = MaterialTheme.typography.titleLarge.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clickable {
-                                                    if (smsData.isCompleted) {
-                                                        removeCompletedId(
-                                                            context,
-                                                            viewModel,
-                                                            smsData.sms
-                                                        )
-                                                    } else {
-                                                        addCompletedIds(
-                                                            context,
-                                                            viewModel,
-                                                            listOf(smsData.sms)
-                                                        )
+                                            Text(
+                                                text = formatPickupCode(smsData.code),
+                                                textDecoration = if (smsData.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                                color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
+                                                style = if (isSeniorMode) MaterialTheme.typography.headlineMedium.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ) else MaterialTheme.typography.titleLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clickable {
+                                                        if (smsData.isCompleted) {
+                                                            removeCompletedId(
+                                                                context,
+                                                                viewModel,
+                                                                smsData.sms
+                                                            )
+                                                        } else {
+                                                            addCompletedIds(
+                                                                context,
+                                                                viewModel,
+                                                                listOf(smsData.sms)
+                                                            )
+                                                        }
+                                                        updateAllWidget()
                                                     }
-                                                    updateAllWidget()
-                                                }
-                                        )
+                                                    .padding(0.dp)
+                                            )
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             if (!preferLockerAddress && smsData.lockerNumber.isNotEmpty()) {
-                                                Text(
-                                                    text = "${smsData.lockerNumber}号柜",
-                                                    style = MaterialTheme.typography.bodySmall.copy(
-                                                        fontWeight = FontWeight.Bold
-                                                    ),
-                                                    color =if (smsData.isCompleted)MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
+                                            Text(
+                                                text = "${smsData.lockerNumber}号柜",
+                                                style = if (isSeniorMode) MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ) else MaterialTheme.typography.bodySmall.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                                color =if (smsData.isCompleted)MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
                                             }
                                             if (showCodeTime) {
-                                                val sdf = remember {
+                                                val sdf = remember(isSeniorMode) {
                                                     SimpleDateFormat(
-                                                        "yyyy-MM-dd HH:mm",
+                                                        if (isSeniorMode) "MM月dd日" else "yyyy-MM-dd HH:mm",
                                                         Locale.getDefault()
                                                     )
                                                 }
-                                                Text(
-                                                    text = sdf.format(Date(smsData.sms.timestamp)),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSecondary
-                                                )
+                                            Text(
+                                                text = sdf.format(Date(smsData.sms.timestamp)),
+                                                style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSecondary
+                                            )
                                             }
                                         }
                                     }
@@ -500,18 +523,19 @@ fun AddressCard(
 
 @Composable
 fun HorizontalList(
-    context: Context,
-    viewModel: ParcelViewModel,
-    navController: NavController,
-    updateAllWidget: () -> Unit,
-    showCompleted: Boolean,
-    showCodeTime: Boolean,
-    parcelsData: List<ParcelData>,
-    expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    preferLockerAddress: Boolean,
-) {
+        context: Context,
+        viewModel: ParcelViewModel,
+        navController: NavController,
+        updateAllWidget: () -> Unit,
+        showCompleted: Boolean,
+        showCodeTime: Boolean,
+        parcelsData: List<ParcelData>,
+        expandedStates: androidx.compose.runtime.MutableState<MutableMap<String, Boolean>>,
+        selectedTabIndex: Int,
+        onTabSelected: (Int) -> Unit,
+        preferLockerAddress: Boolean,
+        isSeniorMode: Boolean,
+    ) {
     val pagerState = rememberPagerState(
         initialPage = selectedTabIndex,
         pageCount = { parcelsData.size }
@@ -578,6 +602,7 @@ fun HorizontalList(
                         expandedStates = expandedStates,
                         isExpanded = isExpanded,
                         preferLockerAddress = preferLockerAddress,
+                        isSeniorMode = isSeniorMode,
                     )
 
                 }
@@ -589,17 +614,18 @@ fun HorizontalList(
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun List(
-    context: Context,
-    viewModel: ParcelViewModel,
-    navController: NavController,
-    updateAllWidget: () -> Unit,
-    showCompleted: Boolean,
-    showCodeTime: Boolean,
-    isHorizontalLayout: Boolean = false,
-    selectedTabIndex: Int = 0,
-    onTabSelected: (Int) -> Unit = {},
-    preferLockerAddress: Boolean,
-) {
+        context: Context,
+        viewModel: ParcelViewModel,
+        navController: NavController,
+        updateAllWidget: () -> Unit,
+        showCompleted: Boolean,
+        showCodeTime: Boolean,
+        isHorizontalLayout: Boolean = false,
+        selectedTabIndex: Int = 0,
+        onTabSelected: (Int) -> Unit = {},
+        preferLockerAddress: Boolean,
+        isSeniorMode: Boolean,
+    ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
     var currentTabIndex by remember { mutableStateOf(selectedTabIndex) }
@@ -620,11 +646,12 @@ fun List(
             parcelsData = parcelsData,
             expandedStates = expandedStates,
             selectedTabIndex = currentTabIndex,
-            onTabSelected = { index ->
-                currentTabIndex = index
-                onTabSelected(index)
+            onTabSelected = {
+                currentTabIndex = it
+                onTabSelected(it)
             },
             preferLockerAddress = preferLockerAddress,
+            isSeniorMode = isSeniorMode,
         )
         return
     }
@@ -640,7 +667,7 @@ fun List(
         Icon(
             painter = painterResource(id = R.drawable.ic_empty_package),
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(if (isSeniorMode) 120.dp else 80.dp),
             tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
         )
 
@@ -663,17 +690,19 @@ fun List(
             onClick = {
                 navController.navigate("add_custom_sms/ ")
             },
-            modifier = Modifier.fillMaxWidth(0.8f)
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .padding(0.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(if (isSeniorMode) 32.dp else 20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "添加自定义取件短信",
-                style = MaterialTheme.typography.labelLarge
+                style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.labelLarge
             )
         }
 
@@ -682,7 +711,7 @@ fun List(
         // 提示文本
         Text(
             text = "您可以手动添加取件短信或取件码",
-            style = MaterialTheme.typography.bodySmall,
+            style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -709,6 +738,7 @@ fun List(
                     expandedStates = expandedStates,
                     isExpanded = isExpanded,
                     preferLockerAddress = preferLockerAddress,
+                    isSeniorMode = isSeniorMode,
                 )
             }
         }

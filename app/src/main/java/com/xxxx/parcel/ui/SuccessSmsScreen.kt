@@ -61,6 +61,7 @@ import com.xxxx.parcel.util.isCustomSms
 fun SuccessSmsScreen(
     viewModel: ParcelViewModel,
     navController: NavController,
+    isSeniorMode: Boolean = false,
     readAndParseSms: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -91,7 +92,7 @@ fun SuccessSmsScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", modifier = Modifier.size(if (isSeniorMode) 36.dp else 24.dp))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -216,7 +217,7 @@ fun SuccessSmsScreen(
                                             contentDescription = null,
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
-                                                .size(14.dp),
+                                                .size(if (isSeniorMode) 21.dp else 14.dp),
                                         )
                                         Text(
                                             text = "添加地址标签",
@@ -224,7 +225,7 @@ fun SuccessSmsScreen(
                                                 horizontal = 8.dp,
                                                 vertical = 4.dp
                                             ),
-                                            style = MaterialTheme.typography.bodySmall,
+                                            style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
                                         )
                                     }
                                 }
@@ -241,9 +242,9 @@ fun SuccessSmsScreen(
                                         val encodedMsg = URLEncoder.encode(data.sms.body, "UTF-8")
                                         navController.navigate("add_rule?message=${encodedMsg}")
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(5f)
                                 ) {
-                                    Text(text = "添加解析规则")
+                                    Text(text = "添加解析规则", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                                 }
 
                                 if (isCustomSms(data.sms)) {
@@ -252,16 +253,16 @@ fun SuccessSmsScreen(
                                             removeCustomSms(context, data.sms.id)
                                             readAndParseSms()
                                         },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(3f)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
                                             contentDescription = "删除",
                                             modifier = Modifier
                                                 .padding(end = 4.dp)
-                                                .size(16.dp)
+                                                .size(if (isSeniorMode) 0.dp else 16.dp)
                                         )
-                                        Text(text = "删除")
+                                        Text(text = "删除", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                                     }
                                 }
                             }

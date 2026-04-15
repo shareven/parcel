@@ -61,10 +61,20 @@ import com.xxxx.parcel.widget.ParcelWidgetXL
 import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.ui.LogScreen
 import com.xxxx.parcel.util.addLog
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.core.content.edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.sp
 
 
 class MainActivity : ComponentActivity() {
     private val hasPermissionState = mutableStateOf(false)
+    internal val isSeniorModeState = mutableStateOf(false)
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
@@ -78,6 +88,8 @@ class MainActivity : ComponentActivity() {
         hasPermissionState.value = PermissionUtil.hasSmsPermissions(this)
 
         viewModel = ParcelViewModel(smsParser, applicationContext)
+        isSeniorModeState.value = getSeniorMode(applicationContext)
+
 
         // 注册权限请求 Launcher
         permissionLauncher = registerForActivityResult(
@@ -116,6 +128,7 @@ class MainActivity : ComponentActivity() {
                 guideToSettings = { guideToSettings() },
                 readAndParseSms = { readAndParseSms() },
                 updateAllWidget = { updateAllWidget() },
+                isSeniorMode = isSeniorModeState.value
             )
         }
     }
@@ -296,18 +309,85 @@ class MainActivity : ComponentActivity() {
 
 }
 
+private fun getSeniorMode(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("senior_mode", false)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+private fun saveSeniorMode(context: Context, isSenior: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit { putBoolean("senior_mode", isSenior) }
+        (context as? MainActivity)?.isSeniorModeState?.value = isSenior
+    } catch (_: Exception) {
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App(
-    context: Context,
-    viewModel: ParcelViewModel,
-    hasPermission: Boolean,
-    guideToSettings: () -> Unit,
-    readAndParseSms: () -> Unit,
-    updateAllWidget: () -> Unit,
-) {
-    ParcelTheme {
+        context: Context,
+        viewModel: ParcelViewModel,
+        hasPermission: Boolean,
+        guideToSettings: () -> Unit,
+        readAndParseSms: () -> Unit,
+        updateAllWidget: () -> Unit,
+        isSeniorMode: Boolean
+    ) {
+        ParcelTheme(isSeniorMode = isSeniorMode) {
         val navController = rememberNavController()
+
+        // 首次启动弹窗：询问是否开启老人模式
+        var showSeniorPrompt by remember {
+            val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+            val shown = prefs.getBoolean("senior_prompt_shown", false)
+            mutableStateOf(!shown)
+        }
+
+        if (showSeniorPrompt) {
+            AlertDialog(
+                onDismissRequest = {
+                    showSeniorPrompt = false
+                    val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+                    prefs.edit { putBoolean("senior_prompt_shown", true) }
+                    saveSeniorMode(context, false)
+                    updateAllWidget()
+                },
+                title = {
+                    Text("开启老人模式？", fontSize = 32.sp)
+                },
+                text = {
+                    Text("字更大，老人优先", fontSize = 26.sp)
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showSeniorPrompt = false
+                        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+                        prefs.edit { putBoolean("senior_prompt_shown", true) }
+                        saveSeniorMode(context, true)
+                        updateAllWidget()
+                    }) {
+                        Text("开启", fontSize = 26.sp)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showSeniorPrompt = false
+                        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+                        prefs.edit { putBoolean("senior_prompt_shown", true) }
+                        saveSeniorMode(context, false)
+                        updateAllWidget()
+                    }) {
+                        Text("不用", fontSize = 26.sp)
+                    }
+                }
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -324,6 +404,11 @@ fun App(
                         hasPermission,
                         onCallBack = { guideToSettings() },
                         updateAllWidget,
+                        isSeniorMode = isSeniorMode,
+                        onSeniorModeChanged = { new ->
+                            saveSeniorMode(context, new)
+                            updateAllWidget()
+                        }
                     )
                 }
                 composable(
@@ -372,10 +457,10 @@ fun App(
                         onCallback = { readAndParseSms() })
                 }
                 composable("fail_sms") {
-                    FailSmsScreen(viewModel, navController, readAndParseSms)
+                    FailSmsScreen(viewModel, navController, isSeniorMode, readAndParseSms)
                 }
                 composable("success_sms") {
-                    SuccessSmsScreen(viewModel, navController,  readAndParseSms)
+                    SuccessSmsScreen(viewModel, navController, isSeniorMode, readAndParseSms)
                 }
                 composable("about") {
                     AboutScreen(navController)

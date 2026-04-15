@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -44,10 +45,12 @@ import com.xxxx.parcel.util.isCustomSms
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController,readAndParseSms: () -> Unit = {}) {
+fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController, isSeniorMode: Boolean = false, readAndParseSms: () -> Unit = {}) {
 
     val context = LocalContext.current
     val failSmsData by viewModel.failedMessages.collectAsState()
+    val textStyle = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium
+    val captionStyle = if (isSeniorMode) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall
 
     Scaffold(
         topBar = {
@@ -91,14 +94,14 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController,readA
                                     .fillMaxWidth(),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = textStyle
                             )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = dateToString(message.timestamp),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = captionStyle,
                             color = Color.Gray
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -111,9 +114,9 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController,readA
                                     val encodedMsg = URLEncoder.encode(message.body, "UTF-8")
                                     navController.navigate("add_rule?message=${encodedMsg}")
                                 },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(3f)
                             ) {
-                                Text(text = "添加解析规则")
+                                Text(text = "添加解析规则", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                             }
 
                             // 只有自定义短信才显示删除按钮
@@ -129,9 +132,11 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController,readA
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "删除",
-                                        modifier = Modifier.padding(end = 4.dp)
+                                        modifier = Modifier
+                                            .padding(end = 4.dp)
+                                            .size(if (isSeniorMode) 24.dp else 16.dp)
                                     )
-                                    Text(text = "删除")
+                                    Text(text = "删除", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                                 }
                             }
                         }

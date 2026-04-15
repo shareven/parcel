@@ -20,6 +20,7 @@ import com.xxxx.parcel.util.addLog
 import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import android.util.Log
+import android.util.TypedValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -152,6 +153,10 @@ class ParcelWidget : AppWidgetProvider() {
             appWidgetId: Int,
             parcels: List<ParcelData>
         ) {
+            val isSeniorMode = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+                .getBoolean("senior_mode", false)
+            val textScale = if (isSeniorMode) 2.0f else 1.0f
+
             var total = 0
             var address1 = ""
             var codeList1 = ""
@@ -209,6 +214,17 @@ class ParcelWidget : AppWidgetProvider() {
                 setTextViewText(R.id.widget_codes5, codeList5)
                 setTextViewText(R.id.widget_address6, address6)
                 setTextViewText(R.id.widget_codes6, codeList6)
+
+                // 设置文字大小（老人模式放大2倍，普通模式恢复原始大小）
+                setTextViewTextSize(R.id.parcel_num, TypedValue.COMPLEX_UNIT_SP, 24f * textScale)
+                setTextViewTextSize(R.id.parcel, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
+                for (i in 1..6) {
+                    val addrId = context.resources.getIdentifier("widget_address$i", "id", context.packageName)
+                    val codeId = context.resources.getIdentifier("widget_codes$i", "id", context.packageName)
+                    val addrSize = if (i == 3) 14f else 12f
+                    setTextViewTextSize(addrId, TypedValue.COMPLEX_UNIT_SP, addrSize * textScale)
+                    setTextViewTextSize(codeId, TypedValue.COMPLEX_UNIT_SP, 16f * textScale)
+                }
 
                 // 设置点击意图
                 val intent = Intent(context, MainActivity::class.java).apply {

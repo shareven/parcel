@@ -67,6 +67,7 @@ fun ParcelTheme(
     gradientBrushDark: Brush = Brush.linearGradient(
         colors = listOf(Color(0xFF2C105E), Color(0xFF020202), Color(0xFF590E26)) // 定义渐变颜色
     ),
+    isSeniorMode: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -81,7 +82,7 @@ fun ParcelTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = getTypography(isSeniorMode),
         shapes = Shapes,
         content = {
             Box(modifier = Modifier

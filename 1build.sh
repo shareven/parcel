@@ -33,5 +33,3 @@ else
     echo "构建失败！"
     exit 1
 fi
-
-echo "构建完成！"
