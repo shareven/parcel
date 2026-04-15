@@ -242,7 +242,7 @@ fun SuccessSmsScreen(
                                         val encodedMsg = URLEncoder.encode(data.sms.body, "UTF-8")
                                         navController.navigate("add_rule?message=${encodedMsg}")
                                     },
-                                    modifier = Modifier.weight(5f)
+                                    modifier = Modifier.weight(2f)
                                 ) {
                                     Text(text = "添加解析规则", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                                 }
@@ -253,16 +253,15 @@ fun SuccessSmsScreen(
                                             removeCustomSms(context, data.sms.id)
                                             readAndParseSms()
                                         },
-                                        modifier = Modifier.weight(3f)
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
                                             contentDescription = "删除",
                                             modifier = Modifier
                                                 .padding(end = 4.dp)
-                                                .size(if (isSeniorMode) 0.dp else 16.dp)
+                                                .size(if (isSeniorMode) 35.dp else 18.dp)
                                         )
-                                        Text(text = "删除", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                                     }
                                 }
                             }
