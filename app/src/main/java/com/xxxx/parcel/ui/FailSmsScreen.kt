@@ -114,29 +114,28 @@ fun FailSmsScreen(viewModel: ParcelViewModel, navController: NavController, isSe
                                     val encodedMsg = URLEncoder.encode(message.body, "UTF-8")
                                     navController.navigate("add_rule?message=${encodedMsg}")
                                 },
-                                modifier = Modifier.weight(3f)
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text(text = "添加解析规则", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
+                                Text(
+                                    text = "添加解析规则",
+                                    style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge
+                                )
                             }
 
-                            // 只有自定义短信才显示删除按钮
                             if (isCustomSms(message)) {
                                 OutlinedButton(
                                     onClick = {
                                         removeCustomSms(context, message.id)
-                                        // 重新读取所有数据
                                         readAndParseSms()
                                     },
-                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "删除",
                                         modifier = Modifier
                                             .padding(end = 4.dp)
-                                            .size(if (isSeniorMode) 24.dp else 16.dp)
+                                            .size(18.dp)
                                     )
-                                    Text(text = "删除", style = if (isSeniorMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.labelLarge)
                                 }
                             }
                         }
