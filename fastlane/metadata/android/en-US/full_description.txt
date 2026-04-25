@@ -4,12 +4,16 @@ This app automatically parses received SMS messages and extracts the address and
 
 You can add custom rules to improve the parsing effect.
 
-Supports Taobao and Pinduoduo ID codes.
+✅ Supports Taobao and Pinduoduo identity codes.
 
-It also supports listening to third-party app notifications and automatically saving pickup code messages, making it more convenient for WeChat friends to pick up their packages.
+🔔 Supports monitoring third-party app notifications to automatically save pickup codes—making it much easier to help friends on WeChat pick up their packages.
 
-Enabling notification listening permissions also allows for background process persistence and real-time updates to the desktop card.
+⚡ Enabling notification access also helps keep the background process alive for real-time widget updates.
 
-Adding a desktop card: Generally hidden in the "All Cards" section at the bottom, under "Plugins" or "Android Widgets".
+🏷️ Supports address categorization; group multiple addresses under one label for easier viewing.
 
-Welcome to download and use! Please submit an issue for any problems or suggestions.
+👴 Supports Senior Mode with large fonts for better accessibility.
+
+📱 Adding Home Screen Widgets: Usually found in the "All Widgets" section—look for "Plugins" or "Android Widgets" at the bottom.
+
+Welcome to download and use! Please raise an issue if you have any questions or suggestions.
