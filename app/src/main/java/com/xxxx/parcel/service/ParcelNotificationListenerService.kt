@@ -34,8 +34,12 @@ import com.xxxx.parcel.util.getSystemSmsNotifySwitch
 class ParcelNotificationListenerService : NotificationListenerService() {
 
     companion object {
-        @Volatile private var lastContent: String? = null
-        @Volatile private var lastTs: Long = 0L
+        private val lock = Any()
+        @Volatile
+        private var lastContent: String? = null
+        @Volatile
+        private var lastTs: Long = 0L
+        private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
     }
 
     private val pddPackage = ThirdPartyDefaults.PDD_PACKAGE
@@ -50,7 +54,8 @@ class ParcelNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        val enabled = NotificationManagerCompat.getEnabledListenerPackages(applicationContext).contains(applicationContext.packageName)
+        val enabled = NotificationManagerCompat.getEnabledListenerPackages(applicationContext)
+            .contains(applicationContext.packageName)
         if (enabled) {
             val componentName = ComponentName(this, ParcelNotificationListenerService::class.java)
             requestRebind(componentName)
@@ -83,7 +88,8 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .build()
             startForeground(1001, notif)
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -100,29 +106,57 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             val text = extractNotificationText(extras)
             when (pkg) {
                 pddPackage -> {
-                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(context, pddPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(pddPackage))) {
+                    if (isAppSwitchEnabled(context, pddPackage) && title == getTitleForPackage(
+                            context,
+                            pddPackage,
+                            defaultTitle = ThirdPartyDefaults.defaultTitleFor(pddPackage)
+                        )
+                    ) {
                         addLog(context, "PDD通知: ${text}")
                         addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                     }
                 }
+
                 douyinPackage -> {
-                    if (isAppSwitchEnabled(context, douyinPackage) && title == getTitleForPackage(context, douyinPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(douyinPackage))) {
+                    if (isAppSwitchEnabled(context, douyinPackage) && title == getTitleForPackage(
+                            context,
+                            douyinPackage,
+                            defaultTitle = ThirdPartyDefaults.defaultTitleFor(douyinPackage)
+                        )
+                    ) {
                         addLog(context, "抖音通知: ${text}")
                         addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                     }
                 }
+
                 xhsPackage -> {
-                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(context, xhsPackage, defaultTitle = ThirdPartyDefaults.defaultTitleFor(xhsPackage))) {
+                    if (isAppSwitchEnabled(context, xhsPackage) && title == getTitleForPackage(
+                            context,
+                            xhsPackage,
+                            defaultTitle = ThirdPartyDefaults.defaultTitleFor(xhsPackage)
+                        )
+                    ) {
                         addLog(context, "小红书通知: ${text}")
                         addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                     }
                 }
+
                 wechatPackage -> {
                     // 微信通知标题通常为会话名；
                     if (isAppSwitchEnabled(context, wechatPackage)) {
-                        val titles = getTitlesForPackage(context, wechatPackage, count = 5, defaultFirst = ThirdPartyDefaults.WECHAT_DEFAULT_FIRST)
+                        val titles = getTitlesForPackage(
+                            context,
+                            wechatPackage,
+                            count = 5,
+                            defaultFirst = ThirdPartyDefaults.WECHAT_DEFAULT_FIRST
+                        )
                         val normalizedSaved = titles.filter { it.isNotBlank() }.map { it.trim() }
-                        val candidates = listOf(title, conversationTitle, subText, sbn.notification.tickerText?.toString() ?: "")
+                        val candidates = listOf(
+                            title,
+                            conversationTitle,
+                            subText,
+                            sbn.notification.tickerText?.toString() ?: ""
+                        )
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }
 
@@ -138,7 +172,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                                         "ParcelNotifyService",
                                         "WeChat matched titles but parse failed; content not saved"
                                     )
-                                    
+
                                 }
                             } else {
                                 Log.d(
@@ -157,21 +191,27 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                         }
                     }
                 }
+
                 else -> {
+                    if (sbn.isOngoing) {
+                        addLog(context, "过滤后台服务提示等 ongoing 通知")
+                        return
+                    }
+                    if (pkg == applicationContext.packageName) return
                     val systemPkgs = getSystemSmsPackages(context)
                     val systemEnabled = getSystemSmsNotifySwitch(context)
                     if (systemEnabled && systemPkgs.contains(pkg)) {
                         if (text.isNotBlank()) {
+                            addLog(context, "pkg: ${pkg}")
                             addLog(context, "短信通知: ${text}")
                             addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
-
                         }
                     }
                 }
             }
         } catch (e: Exception) {
             Log.e("ParcelNotifyService", "通知处理出错: ${e.message}")
-            addLog(context,"ParcelNotifyService, 通知处理出错: ${e.message}")
+            addLog(context, "ParcelNotifyService, 通知处理出错: ${e.message}")
         }
     }
 
@@ -195,26 +235,30 @@ class ParcelNotificationListenerService : NotificationListenerService() {
     }
 
     private fun addNotificationAsCustomSmsIfNotInInboxDelayed(context: Context, content: String) {
-        Thread {
-            val nowStart = System.currentTimeMillis()
+        synchronized(lock) {
+            val now = System.currentTimeMillis()
             val prev = lastContent
-            val withinWindow = prev != null && prev == content && (nowStart - lastTs) < 2000L
-            if (withinWindow) return@Thread
+            if (prev != null && prev == content && (now - lastTs) < 2000L) return
+            lastContent = content
+            lastTs = now
+        }
+        executor.execute {
             try {
                 Thread.sleep(1000L)
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
             val exists = try {
-                SmsUtil.inboxContainsBodyRecent(context, content, 5 * 60 * 1000L)
-            } catch (_: Exception) { false }
+                SmsUtil.inboxContainsBodyRecent(context, content, 12 * 60 * 60 * 1000L)
+            } catch (_: Exception) {
+                false
+            }
             if (!exists) {
                 addNotificationAsCustomSms(context, content)
                 addLog(context, "通知保存: ${content}")
-                lastContent = content
-                lastTs = nowStart
             } else {
                 addLog(context, "通知文本已在短信箱，跳过保存: ${content}")
             }
-        }.start()
+        }
     }
 
     // 仅保存解析成功的内容（加载自定义规则）
@@ -249,14 +293,18 @@ class ParcelNotificationListenerService : NotificationListenerService() {
 
         // 尝试 MessagingStyle 的 android.messages（Bundle 中 text 字段）
         val messages = extras.getParcelableArray("android.messages")
-        val lastMsgText = messages?.lastOrNull()?.let { it as? Bundle }?.getCharSequence("text")?.toString()
+        val lastMsgText =
+            messages?.lastOrNull()?.let { it as? Bundle }?.getCharSequence("text")?.toString()
         if (!lastMsgText.isNullOrBlank()) return lastMsgText
 
         return ""
     }
 
     override fun onDestroy() {
-        try { stopForeground(true) } catch (_: Exception) { }
+        try {
+            stopForeground(true)
+        } catch (_: Exception) {
+        }
         super.onDestroy()
     }
 }

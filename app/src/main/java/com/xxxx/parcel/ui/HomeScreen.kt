@@ -734,7 +734,7 @@ fun List(
     if (parcelsData.isEmpty()) Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(8.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -766,7 +766,7 @@ fun List(
                 navController.navigate("add_custom_sms/ ")
             },
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+//                .fillMaxWidth(0.8f)
                 .padding(0.dp)
         ) {
             Icon(
@@ -777,7 +777,7 @@ fun List(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "添加自定义取件短信",
-                style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.labelLarge
+                style = if (isSeniorMode) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge
             )
         }
 

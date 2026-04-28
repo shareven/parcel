@@ -71,7 +71,7 @@ class SmsUtil {
             return smsList
         }
 
-        fun inboxContainsBodyRecent(context: Context, body: String, windowMs: Long = 5 * 60 * 1000L): Boolean {
+        fun inboxContainsBodyRecent(context: Context, body: String, windowMs: Long = 60 * 60 * 1000L): Boolean {
             return try {
                 val resolver = context.contentResolver
                 val uri: Uri = "content://sms/inbox".toUri()
