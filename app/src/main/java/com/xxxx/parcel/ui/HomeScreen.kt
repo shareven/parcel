@@ -473,7 +473,7 @@ fun AddressCard(
 
                 Text(
                     text = "${parcelData.address}（${parcelData.num}）",
-                    style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
@@ -702,6 +702,9 @@ fun List(
     isSeniorMode: Boolean,
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
+    val filteredParcelsData = if (showCompleted) parcelsData else parcelsData.filter { parcel ->
+        parcel.smsDataList.any { !it.isCompleted }
+    }
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
     var currentTabIndex by remember { mutableStateOf(selectedTabIndex) }
     val timeFilterIndex by viewModel.timeFilterIndex.collectAsState()
@@ -710,7 +713,7 @@ fun List(
         currentTabIndex = 0
     }
 
-    if (isHorizontalLayout && parcelsData.isNotEmpty()) {
+    if (isHorizontalLayout && filteredParcelsData.isNotEmpty()) {
         HorizontalList(
             context = context,
             viewModel = viewModel,
@@ -718,7 +721,7 @@ fun List(
             updateAllWidget = updateAllWidget,
             showCompleted = showCompleted,
             showCodeTime = showCodeTime,
-            parcelsData = parcelsData,
+            parcelsData = filteredParcelsData,
             expandedStates = expandedStates,
             selectedTabIndex = currentTabIndex,
             onTabSelected = {
@@ -731,7 +734,7 @@ fun List(
         return
     }
 
-    if (parcelsData.isEmpty()) Column(
+    if (filteredParcelsData.isEmpty()) Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(8.dp),
@@ -800,7 +803,7 @@ fun List(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(parcelsData) { result ->
+            items(filteredParcelsData) { result ->
                 val isExpanded = expandedStates.value[result.address] ?: true
                 AddressCard(
                     context = context,
