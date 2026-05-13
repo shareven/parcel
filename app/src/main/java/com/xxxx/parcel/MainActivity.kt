@@ -273,7 +273,7 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Request rebind failed: ${e.message}")
-            addLog(this, "请求重新绑定通知监听服务失败: ${e.message}")
+            addLog(this, "重新绑定通知监听失败: ${e.message}")
         }
     }
 

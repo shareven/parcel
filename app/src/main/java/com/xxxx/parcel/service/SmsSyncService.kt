@@ -49,7 +49,7 @@ class SmsSyncService : Service() {
                     com.xxxx.parcel.widget.ParcelWidgetLargeMiui.updateAppWidget(this, mgr, null, null)
                 } catch (_: Exception) {}
                 addLog(this, "短信前台服务刷新完成并广播更新")
-            } catch (e: Exception) { addLog(this, "短信服务线程错误: ${e.message}") }
+            } catch (e: Exception) { addLog(this, "短信服务出错: ${e.message}") }
             try { stopForeground(true) } catch (_: Exception) {}
             stopSelf()
         }.start()

@@ -353,6 +353,9 @@ fun addLog(context: Context, text: String) {
     } catch (_: Exception) { mutableListOf() }
     val ver = getAppVersionName(context)
     list.add(LogEntry(System.currentTimeMillis(), text, ver))
+    if (list.size > 500) {
+        list.subList(0, list.size - 500).clear()
+    }
     sp.edit().putString("logs_json", Json.encodeToString(list)).apply()
 }
 

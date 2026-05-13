@@ -95,9 +95,11 @@ class ParcelNotificationListenerService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val context = applicationContext
         try {
-            if (!isMainSwitchEnabled(context)) return
-
             val pkg = sbn.packageName ?: return
+            if (!isMainSwitchEnabled(context)) {
+                if (pkg == wechatPackage) addLog(context, "微信通知未处理: 总开关未开启")
+                return
+            }
             val extras = sbn.notification.extras
             val title = extras.getString(Notification.EXTRA_TITLE) ?: ""
             val conversationTitle = extras.getString(Notification.EXTRA_CONVERSATION_TITLE) ?: ""
@@ -142,6 +144,11 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                 }
 
                 wechatPackage -> {
+                    val wechatTitle = extras.getString(Notification.EXTRA_TITLE) ?: ""
+                    val wechatConvTitle = extras.getString(Notification.EXTRA_CONVERSATION_TITLE) ?: ""
+                    val wechatSubText = extras.getString(Notification.EXTRA_SUB_TEXT) ?: ""
+                    val wechatTicker = sbn.notification.tickerText?.toString() ?: ""
+                    addLog(context, "微信通知: 标题=$wechatTitle 对话=$wechatConvTitle 副文本=$wechatSubText 滚动文本=$wechatTicker")
                     // 微信通知标题通常为会话名；
                     if (isAppSwitchEnabled(context, wechatPackage)) {
                         val titles = getTitlesForPackage(
@@ -160,41 +167,31 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }
 
-                        if (normalizedSaved.isNotEmpty() && candidates.any { cand -> normalizedSaved.any { it == cand } }) {
-                            // 文本可能在 MessagingStyle 或 textLines 中，已在 extractNotificationText 处理
+                        val matched = normalizedSaved.isNotEmpty() && candidates.any { cand -> normalizedSaved.any { it == cand } }
+                        addLog(context, "微信通知匹配: 候选联系人=$candidates 已保存联系人=$normalizedSaved 匹配结果=$matched")
+
+                        if (matched) {
+                            addLog(context, "微信通知提取内容: $text")
                             if (text.isNotBlank()) {
-                                // 仅当解析成功时才保存
                                 if (shouldSaveBasedOnParse(context, text)) {
+                                    addLog(context, "微信通知解析成功，准备保存")
                                     addLog(context, "微信通知: ${text}")
                                     addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                                 } else {
-                                    Log.d(
-                                        "ParcelNotifyService",
-                                        "WeChat matched titles but parse failed; content not saved"
-                                    )
-
+                                    addLog(context, "微信通知解析失败，内容=$text")
                                 }
                             } else {
-                                Log.d(
-                                    "ParcelNotifyService",
-                                    "WeChat matched titles but text empty; extras may be MessagingStyle"
-                                )
-                                addLog(context, "微信通知文本为空")
+                                addLog(context, "微信通知内容为空，无法提取正文")
                             }
                         }
-                        // 调试日志（帮助定位为何未匹配）
-                        else {
-                            Log.d(
-                                "ParcelNotifyService",
-                                "WeChat unmatched. candidates=${candidates} saved=${normalizedSaved}"
-                            )
-                        }
+                    } else {
+                        addLog(context, "微信通知未处理: 微信开关未开启")
                     }
                 }
 
                 else -> {
                     if (sbn.isOngoing) {
-                        addLog(context, "过滤后台服务提示等 ongoing 通知")
+                        addLog(context, "忽略常驻通知: pkg=$pkg, text=${text.take(50)}")
                         return
                     }
                     if (pkg == applicationContext.packageName) return
@@ -202,7 +199,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
                     val systemEnabled = getSystemSmsNotifySwitch(context)
                     if (systemEnabled && systemPkgs.contains(pkg)) {
                         if (text.isNotBlank()) {
-                            addLog(context, "pkg: ${pkg}")
+                            addLog(context, "其他应用通知: $pkg")
                             addLog(context, "短信通知: ${text}")
                             addNotificationAsCustomSmsIfNotInInboxDelayed(context, text)
                         }
@@ -211,7 +208,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             }
         } catch (e: Exception) {
             Log.e("ParcelNotifyService", "通知处理出错: ${e.message}")
-            addLog(context, "ParcelNotifyService, 通知处理出错: ${e.message}")
+            addLog(context, "通知处理出错: ${e.message}")
         }
     }
 
@@ -230,7 +227,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             context.sendBroadcast(intent)
         } catch (e: Exception) {
             Log.e("ParcelNotifyService", "广播失败: ${e.message}")
-            addLog(context, "ParcelNotifyService, 广播失败: ${e.message}")
+            addLog(context, "通知广播失败: ${e.message}")
         }
     }
 
@@ -238,7 +235,10 @@ class ParcelNotificationListenerService : NotificationListenerService() {
         synchronized(lock) {
             val now = System.currentTimeMillis()
             val prev = lastContent
-            if (prev != null && prev == content && (now - lastTs) < 2000L) return
+            if (prev != null && prev == content && (now - lastTs) < 2000L) {
+                addLog(context, "微信通知重复，已忽略(2秒内重复): $content")
+                return
+            }
             lastContent = content
             lastTs = now
         }
@@ -271,7 +271,7 @@ class ParcelNotificationListenerService : NotificationListenerService() {
             result.success
         } catch (e: Exception) {
             Log.e("ParcelNotifyService", "解析出错: ${e.message}")
-            addLog(context, "ParcelNotifyService 解析出错: ${e.message}")
+            addLog(context, "通知解析出错: ${e.message}")
             false
         }
     }

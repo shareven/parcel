@@ -141,7 +141,7 @@ class ParcelWidget : AppWidgetProvider() {
                         populateWidgetData(context, appWidgetManager, appWidgetId, result.parcels)
                     } catch (e: Exception) {
                         Log.e("ParcelWidget", "Error loading SMS: ${e.message}")
-                        addLog(context, "小组件加载短信失败: ${e.message}")
+                        addLog(context, "桌面小组件加载失败: ${e.message}")
                     }
                 }
             }
