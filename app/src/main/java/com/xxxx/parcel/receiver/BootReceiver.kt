@@ -7,10 +7,15 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.appwidget.AppWidgetManager
 import androidx.core.app.NotificationManagerCompat
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.widget.ParcelWidget
 import com.xxxx.parcel.widget.ParcelWidgetLarge
 import com.xxxx.parcel.widget.ParcelWidgetXL
+import com.xxxx.parcel.worker.NotificationListenerHealthWorker
+import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -45,6 +50,17 @@ class BootReceiver : BroadcastReceiver() {
                 )
                 ParcelWidget.updateAllByProvider(context, ParcelWidgetLarge::class.java, null)
                 ParcelWidget.updateAllByProvider(context, ParcelWidgetXL::class.java, null)
+            } catch (_: Throwable) {}
+
+            try {
+                val healthWork = PeriodicWorkRequestBuilder<NotificationListenerHealthWorker>(
+                    15, TimeUnit.MINUTES
+                ).build()
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    NotificationListenerHealthWorker.WORK_NAME,
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    healthWork
+                )
             } catch (_: Throwable) {}
         }
     }

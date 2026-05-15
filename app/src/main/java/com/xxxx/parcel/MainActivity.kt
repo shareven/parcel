@@ -15,6 +15,9 @@ import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -242,6 +245,8 @@ class MainActivity : ComponentActivity() {
 
         // 应用启动后尝试重新绑定通知监听服务，避免重启后不工作
         rebindNotificationListenerIfNeeded()
+
+        scheduleNotificationListenerHealthCheck()
     }
 
     private fun registerCustomSmsAddedReceiver() {
@@ -274,6 +279,21 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             Log.e("MainActivity", "Request rebind failed: ${e.message}")
             addLog(this, "重新绑定通知监听失败: ${e.message}")
+        }
+    }
+
+    private fun scheduleNotificationListenerHealthCheck() {
+        try {
+            val healthWork = PeriodicWorkRequestBuilder<
+                com.xxxx.parcel.worker.NotificationListenerHealthWorker
+            >(15, java.util.concurrent.TimeUnit.MINUTES).build()
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                com.xxxx.parcel.worker.NotificationListenerHealthWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                healthWork
+            )
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to schedule health check: ${e.message}")
         }
     }
 
