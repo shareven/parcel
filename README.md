@@ -26,7 +26,7 @@
 
 # 📲 下载 | Download
 
-> 最新版本：v1.0.60
+> 最新版本：v1.0.61
 
 | 渠道 | 链接 |
 |------|------|
@@ -68,11 +68,11 @@
 <img src="show2.jpg" width="180">
 <img src="show3.jpg" width="180">
 <img src="show4.jpg" width="180">
-
 <img src="show5.jpg" width="180">
 <img src="show6.jpg" width="180">
 <img src="show7.jpg" width="180">
 <img src="show8.jpg" width="180">
+<img src="show9.png" width="180">
 
 </div>
 

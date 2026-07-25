@@ -14,6 +14,7 @@ import kotlinx.serialization.decodeFromString
 fun loadCustomRulesToParser(context: Context, parser: SmsParser) {
     getCustomList(context, "address").forEach { if (it.isNotBlank()) parser.addCustomAddressPattern(it) }
     getCustomList(context, "code").forEach { if (it.isNotBlank()) parser.addCustomCodePattern(it) }
+    getCustomList(context, "codeKeyword").forEach { if (it.isNotBlank()) parser.addCustomCodeKeyword(it) }
     getCustomList(context, "ignoreKeywords").forEach { if (it.isNotBlank()) parser.addIgnoreKeyword(it) }
     parser.preferLockerAddress = getPreferLockerAddress(context)
 }
@@ -80,19 +81,23 @@ fun addCompletedIds(context: Context, viewModel: ParcelViewModel, smsList: List<
 }
 
 fun getAllSaveData(context: Context, viewModel: ParcelViewModel) {
-    val listAddr = getCustomList(context, "address").toMutableList()
-    val listCode = getCustomList(context, "code").toMutableList()
-    val completedIds = getCustomList(context, "completedIds").toMutableList()
-    val ignoreKeywords = getCustomList(context, "ignoreKeywords").toMutableList()
-    val timeFilterIndex = getIndex(context)
-    val preferLockerAddress = getPreferLockerAddress(context)
+        val listAddr = getCustomList(context, "address").toMutableList()
+        val listCode = getCustomList(context, "code").toMutableList()
+        val listCodeKeyword = getCustomList(context, "codeKeyword").toMutableList()
+        val completedIds = getCustomList(context, "completedIds").toMutableList()
+        val ignoreKeywords = getCustomList(context, "ignoreKeywords").toMutableList()
+        val timeFilterIndex = getIndex(context)
+        val preferLockerAddress = getPreferLockerAddress(context)
 
-    listAddr.forEach {
-        viewModel.addCustomAddressPattern(it)
-    }
-    listCode.forEach {
-        viewModel.addCustomCodePattern(it)
-    }
+        listAddr.forEach {
+            viewModel.addCustomAddressPattern(it)
+        }
+        listCode.forEach {
+            viewModel.addCustomCodePattern(it)
+        }
+        listCodeKeyword.forEach {
+            viewModel.addCustomCodeKeyword(it)
+        }
     ignoreKeywords.forEach {
         viewModel.addIgnoreKeyword(it)
     }
@@ -129,6 +134,7 @@ fun clearCustomPattern(
 fun clearAllCustomPatterns(context: Context, viewModel: ParcelViewModel) {
     saveCustomList(context, "address", mutableSetOf())
     saveCustomList(context, "code", mutableSetOf())
+    saveCustomList(context, "codeKeyword", mutableSetOf())
     viewModel.clearAllCustomPatterns()
 }
 

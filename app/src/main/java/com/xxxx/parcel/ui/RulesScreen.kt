@@ -55,11 +55,13 @@ fun RulesScreen(
 ) {
     var listAddr by remember { mutableStateOf(mutableListOf<String>()) }
     var listCode by remember { mutableStateOf(mutableListOf<String>()) }
+    var listCodeKeyword by remember { mutableStateOf(mutableListOf<String>()) }
     var listIgnoreKeywords by remember { mutableStateOf(mutableListOf<String>()) }
 
     fun getDate() {
         listAddr = getCustomList(context, "address").toMutableList()
         listCode = getCustomList(context, "code").toMutableList()
+        listCodeKeyword = getCustomList(context, "codeKeyword").toMutableList()
         listIgnoreKeywords = getCustomList(context, "ignoreKeywords").toMutableList()
     }
 
@@ -189,6 +191,52 @@ fun RulesScreen(
                         IconButton(
                             modifier = Modifier.size(36.dp),
                             onClick = { onDelete("code", code) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "删除规则",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                Spacer(Modifier.height(16.dp))
+            }
+            item {
+                Text(
+                    text = "自定义取件码前缀",
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            items(listCodeKeyword) { keyword ->
+                Card(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = 8.dp
+                            )
+                    ) {
+                        SelectionContainer {
+                            Text(
+                                text = keyword,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        IconButton(
+                            modifier = Modifier.size(36.dp),
+                            onClick = { onDelete("codeKeyword", keyword) }
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,

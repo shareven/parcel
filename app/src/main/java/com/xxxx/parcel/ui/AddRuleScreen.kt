@@ -49,6 +49,7 @@ fun AddRuleScreen(
 
     var addressPattern by remember { mutableStateOf("") }
     var codePattern by remember { mutableStateOf("") }
+    var codeKeyword by remember { mutableStateOf("") }
     var ignoreKeyword by remember { mutableStateOf("") }
 
     Scaffold(
@@ -121,6 +122,21 @@ fun AddRuleScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Column {
                         Text(
+                            text = "取件码前缀关键词",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = codeKeyword,
+                            placeholder = {Text("选填，如：快件取件编号")},
+                            onValueChange = { codeKeyword = it },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Column {
+                        Text(
                             text = "复制短信中的 地址 填入",
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -157,7 +173,7 @@ fun AddRuleScreen(
                         Button(
                             enabled = addressPattern.isNotEmpty() && message.contains(addressPattern) || codePattern.isNotEmpty() && message.contains(
                                 codePattern
-                            ) || ignoreKeyword.isNotEmpty(),
+                            ) || codeKeyword.isNotEmpty() || ignoreKeyword.isNotEmpty(),
                             onClick = {
                                 if (addressPattern.isNotBlank()) {
                                     addCustomList(context, "address", addressPattern)
@@ -184,6 +200,11 @@ fun AddRuleScreen(
                                     )
                                     viewModel.addCustomCodePattern(regexPattern)
                                     codePattern = ""
+                                }
+                                if (codeKeyword.isNotBlank()) {
+                                    addCustomList(context, "codeKeyword", codeKeyword)
+                                    viewModel.addCustomCodeKeyword(codeKeyword)
+                                    codeKeyword = ""
                                 }
                                 if (ignoreKeyword.isNotBlank()) {
                                     addCustomList(context, "ignoreKeywords", ignoreKeyword)

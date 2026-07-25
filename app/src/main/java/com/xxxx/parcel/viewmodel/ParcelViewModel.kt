@@ -117,6 +117,10 @@ class ParcelViewModel(
         smsParser.addCustomCodePattern(pattern)
     }
 
+    fun addCustomCodeKeyword(keyword: String) {
+        smsParser.addCustomCodeKeyword(keyword)
+    }
+
     fun addIgnoreKeyword(keyword: String) {
         smsParser.addIgnoreKeyword(keyword)
     }
