@@ -72,7 +72,7 @@
 <img src="show6.jpg" width="180">
 <img src="show7.jpg" width="180">
 <img src="show8.jpg" width="180">
-<img src="show9.png" width="180">
+<img src="show9.jpg" width="180">
 
 </div>
 
