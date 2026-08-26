@@ -2,7 +2,9 @@ package com.xxxx.parcel.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.model.ParcelData
+import com.xxxx.parcel.model.SmsData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,7 +68,10 @@ import com.xxxx.parcel.util.addCompletedIds
 import com.xxxx.parcel.util.removeCompletedId
 import com.xxxx.parcel.util.saveIndex
 import com.xxxx.parcel.util.formatPickupCode
+import com.xxxx.parcel.util.getCodeNotes
 import com.xxxx.parcel.util.getPreferLockerAddress
+import com.xxxx.parcel.util.saveCodeNote
+import com.xxxx.parcel.ui.components.NoteDialog
 import com.xxxx.parcel.viewmodel.ParcelViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -423,6 +429,7 @@ fun HomeScreen(
 
 
 @SuppressLint("MutableCollectionMutableState")
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AddressCard(
     context: Context,
@@ -436,6 +443,8 @@ fun AddressCard(
     isExpanded: Boolean,
     preferLockerAddress: Boolean,
     isSeniorMode: Boolean,
+    codeNotes: Map<String, String> = emptyMap(),
+    onLongPressCode: (SmsData) -> Unit = {},
 ) {
     val isAllCompleted = parcelData.smsDataList.find { !it.isCompleted } == null
 
@@ -538,22 +547,25 @@ fun AddressCard(
                                             ),
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .clickable {
-                                                    if (smsData.isCompleted) {
-                                                        removeCompletedId(
-                                                            context,
-                                                            viewModel,
-                                                            smsData.sms
-                                                        )
-                                                    } else {
-                                                        addCompletedIds(
-                                                            context,
-                                                            viewModel,
-                                                            listOf(smsData.sms)
-                                                        )
-                                                    }
-                                                    updateAllWidget()
-                                                }
+                                                .combinedClickable(
+                                                    onClick = {
+                                                        if (smsData.isCompleted) {
+                                                            removeCompletedId(
+                                                                context,
+                                                                viewModel,
+                                                                smsData.sms
+                                                            )
+                                                        } else {
+                                                            addCompletedIds(
+                                                                context,
+                                                                viewModel,
+                                                                listOf(smsData.sms)
+                                                            )
+                                                        }
+                                                        updateAllWidget()
+                                                    },
+                                                    onLongClick = { onLongPressCode(smsData) }
+                                                )
                                                 .padding(0.dp)
                                         )
                                         Column(
@@ -568,6 +580,17 @@ fun AddressCard(
                                                         fontWeight = FontWeight.Bold
                                                     ),
                                                     color = if (smsData.isCompleted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            val codeNote = codeNotes[smsData.id] ?: ""
+                                            if (codeNote.isNotEmpty()) {
+                                                Text(
+                                                    text = codeNote,
+                                                    style = if (isSeniorMode) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.tertiary,
+                                                    textAlign = TextAlign.Center,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                             if (showCodeTime) {
@@ -610,6 +633,8 @@ fun HorizontalList(
     onTabSelected: (Int) -> Unit,
     preferLockerAddress: Boolean,
     isSeniorMode: Boolean,
+    codeNotes: Map<String, String> = emptyMap(),
+    onLongPressCode: (SmsData) -> Unit = {},
 ) {
     val pagerState = rememberPagerState(
         initialPage = selectedTabIndex,
@@ -678,6 +703,8 @@ fun HorizontalList(
                         isExpanded = isExpanded,
                         preferLockerAddress = preferLockerAddress,
                         isSeniorMode = isSeniorMode,
+                        codeNotes = codeNotes,
+                        onLongPressCode = onLongPressCode,
                     )
 
                 }
@@ -708,9 +735,25 @@ fun List(
     val expandedStates = remember { mutableStateOf(mutableMapOf<String, Boolean>()) }
     var currentTabIndex by remember { mutableStateOf(selectedTabIndex) }
     val timeFilterIndex by viewModel.timeFilterIndex.collectAsState()
+    // 取件码备注：id -> 备注
+    var codeNotes by remember { mutableStateOf(getCodeNotes(context)) }
+    var noteTarget by remember { mutableStateOf<SmsData?>(null) }
 
     LaunchedEffect(timeFilterIndex) {
         currentTabIndex = 0
+    }
+
+    noteTarget?.let { target ->
+        NoteDialog(
+            code = formatPickupCode(target.code),
+            currentNote = codeNotes[target.id] ?: "",
+            onDismiss = { noteTarget = null },
+            onConfirm = { note ->
+                saveCodeNote(context, target.id, note)
+                codeNotes = getCodeNotes(context)
+                noteTarget = null
+            }
+        )
     }
 
     if (isHorizontalLayout && filteredParcelsData.isNotEmpty()) {
@@ -730,6 +773,8 @@ fun List(
             },
             preferLockerAddress = preferLockerAddress,
             isSeniorMode = isSeniorMode,
+            codeNotes = codeNotes,
+            onLongPressCode = { noteTarget = it },
         )
         return
     }
@@ -817,6 +862,8 @@ fun List(
                     isExpanded = isExpanded,
                     preferLockerAddress = preferLockerAddress,
                     isSeniorMode = isSeniorMode,
+                    codeNotes = codeNotes,
+                    onLongPressCode = { noteTarget = it },
                 )
             }
         }

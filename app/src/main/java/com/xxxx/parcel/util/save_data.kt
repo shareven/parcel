@@ -449,6 +449,38 @@ fun removeSystemSmsPackage(context: Context, pkg: String) {
     setSystemSmsPackages(context, set)
 }
 
+// ===== 取件码备注 =====
+@kotlinx.serialization.Serializable
+data class CodeNote(val id: String, val note: String)
+
+fun getCodeNotes(context: Context): Map<String, String> {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val jsonStr = sp.getString("code_notes_json", null) ?: return emptyMap()
+    return try {
+        Json.decodeFromString<List<CodeNote>>(jsonStr).associate { it.id to it.note }
+    } catch (e: Exception) {
+        emptyMap()
+    }
+}
+
+fun saveCodeNote(context: Context, id: String, note: String) {
+    val sp = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+    val currentJson = sp.getString("code_notes_json", null) ?: "[]"
+    val currentList = try {
+        Json.decodeFromString<List<CodeNote>>(currentJson).toMutableList()
+    } catch (e: Exception) {
+        mutableListOf()
+    }
+
+    currentList.removeAll { it.id == id }
+    // 备注为空视为删除
+    if (note.isNotBlank()) {
+        currentList.add(CodeNote(id, note.trim().take(9)))
+    }
+
+    sp.edit().putString("code_notes_json", Json.encodeToString(currentList)).apply()
+}
+
 // ===== 地址归类映射 =====
 @kotlinx.serialization.Serializable
 data class AddressMapping(val originalAddress: String, val tag: String)
