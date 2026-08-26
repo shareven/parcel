@@ -115,6 +115,99 @@ fun getPreferLockerAddress(context: Context): Boolean {
     }
 }
 
+fun savePreferLockerAddress(context: Context, prefer: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("prefer_locker_address", prefer).apply()
+    } catch (_: Exception) {
+    }
+}
+
+// ===== 首页显示设置（parcel_prefs） =====
+fun saveShowCompleted(context: Context, show: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("show_completed_codes", show).apply()
+    } catch (_: Exception) {
+    }
+}
+
+fun getShowCompleted(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("show_completed_codes", true)
+    } catch (_: Exception) {
+        true
+    }
+}
+
+fun saveShowCodeTime(context: Context, show: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("show_code_time", show).apply()
+    } catch (_: Exception) {
+    }
+}
+
+fun getShowCodeTime(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("show_code_time", true)
+    } catch (_: Exception) {
+        true
+    }
+}
+
+fun saveShowCompartment(context: Context, show: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("show_compartment", show).apply()
+    } catch (_: Exception) {
+    }
+}
+
+fun getShowCompartment(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("show_compartment", true)
+    } catch (_: Exception) {
+        true
+    }
+}
+
+fun saveTimeSort(context: Context, timeSort: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("time_sort", timeSort).apply()
+    } catch (_: Exception) {
+    }
+}
+
+fun getTimeSort(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("time_sort", false)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+fun saveHorizontalLayout(context: Context, horizontal: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("horizontal_layout", horizontal).apply()
+    } catch (_: Exception) {
+    }
+}
+
+fun getHorizontalLayout(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("horizontal_layout", false)
+    } catch (_: Exception) {
+        false
+    }
+}
 
 fun clearCustomPattern(
     context: Context,

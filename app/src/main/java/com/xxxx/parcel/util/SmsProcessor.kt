@@ -54,12 +54,12 @@ object SmsProcessor {
                 // 获取分组用的地址（优先使用 tag）
                 val groupAddress = addressMappings[originalAddress] ?: originalAddress
                 
-                val smsData = SmsData(originalAddress, result.code, sms, combinedKey, false, result.lockerNumber)
+                val smsData = SmsData(originalAddress, result.code, sms, combinedKey, false, result.lockerNumber, result.compartmentNumber)
                 successful.add(smsData)
 
                 // Grouping logic - use groupAddress for grouping
                 val existingParcel = parcelsMap[groupAddress]
-                val newItem = SmsData(originalAddress, result.code, sms, combinedKey, false, result.lockerNumber)
+                val newItem = SmsData(originalAddress, result.code, sms, combinedKey, false, result.lockerNumber, result.compartmentNumber)
 
                 if (existingParcel != null) {
                     val existsSameDaySameAddrCode = existingParcel.smsDataList.any { existing ->
