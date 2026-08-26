@@ -14,9 +14,15 @@ class SmsParser {
     // 格口号：优先匹配"格口"字样前的字符，如 "7号柜23-32格口"、"格口23-32"
     private val compartmentPattern: Pattern =
         Pattern.compile("""([A-Za-z0-9\-*—_]+)\s*格口""")
+    // 变体："格口"字样在前，如 "格口：23-32"、"格口 23-32"
+    private val compartmentPrefixPattern: Pattern =
+        Pattern.compile("""格口\s*[:：]?\s*([A-Za-z0-9\-*—_]+)""")
     // 兜底：柜号后直接紧跟的字符，如 "7号柜23-32"
     private val compartmentAfterLockerPattern: Pattern =
         Pattern.compile("""[0-9]+号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)\s*([A-Za-z0-9\-*—_]+)""")
+    // 紧跟数字后的计量单位词 → 是时长/费用等，不是格口，如 "7号柜36小时免费"
+    private val unitAfterNumberPattern: Pattern =
+        Pattern.compile("""^(小时|天|日|分钟|秒|元|件|个|月|年|折)""")
     private val addressPattern: Pattern =
         Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|快递点|门面|柜|,|，|。|$))""")
     private val codePattern: Pattern = Pattern.compile(
@@ -93,12 +99,19 @@ class SmsParser {
         val lockerMatcher: Matcher = lockerPattern.matcher(sms)
         val lockerNumber = if (lockerMatcher.find()) lockerMatcher.group(1) ?: "" else ""
 
-        // 始终提取格口号：优先匹配"格口"字样前的字符，其次匹配柜号后紧跟的字符
+        // 始终提取格口号：优先匹配"格口"字样（前后两种写法），其次匹配柜号后紧跟的字符
         val compartmentNumber = run {
             val m1 = compartmentPattern.matcher(sms)
             if (m1.find()) return@run m1.group(1) ?: ""
+            val m1b = compartmentPrefixPattern.matcher(sms)
+            if (m1b.find()) return@run m1b.group(1) ?: ""
+            // 兜底：柜号后紧跟的字符；校验其后非单位词，排除 "7号柜36小时免费" 误识别
             val m2 = compartmentAfterLockerPattern.matcher(sms)
-            if (m2.find()) m2.group(1) ?: "" else ""
+            if (m2.find()) {
+                val candidate = m2.group(1) ?: ""
+                val after = sms.substring(m2.end())
+                if (candidate.isNotEmpty() && !unitAfterNumberPattern.matcher(after).find()) candidate else ""
+            } else ""
         }
 
         if (foundCode.isEmpty()) {
