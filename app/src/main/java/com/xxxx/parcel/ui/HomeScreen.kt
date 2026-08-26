@@ -107,6 +107,7 @@ fun HomeScreen(
     var showCompleted by remember { mutableStateOf(getShowCompleted(context)) }
     var showCodeTime by remember { mutableStateOf(getShowCodeTime(context)) }
     var isHorizontalLayout by remember { mutableStateOf(getHorizontalLayout(context)) }
+    var isTimeSort by remember { mutableStateOf(getTimeSort(context)) }
     var preferLockerAddress by remember { mutableStateOf(getPreferLockerAddress(context)) }
     val timeFilterOptions = listOf(
         "全部",
@@ -193,6 +194,20 @@ fun HomeScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }) {
 
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        if (isTimeSort) "切换为默认排序" else "切换为时间排序",
+                                        style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    val new = !isTimeSort
+                                    saveTimeSort(context, new)
+                                    isTimeSort = new
+                                }
+                            )
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -381,7 +396,8 @@ fun HomeScreen(
                 showCodeTime = showCodeTime,
                 isHorizontalLayout = isHorizontalLayout,
                 preferLockerAddress = preferLockerAddress,
-                isSeniorMode = isSeniorMode
+                isSeniorMode = isSeniorMode,
+                isTimeSort = isTimeSort
             ) else
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -443,10 +459,17 @@ fun AddressCard(
     isExpanded: Boolean,
     preferLockerAddress: Boolean,
     isSeniorMode: Boolean,
+    isTimeSort: Boolean = false,
     codeNotes: Map<String, String> = emptyMap(),
     onLongPressCode: (SmsData) -> Unit = {},
 ) {
     val isAllCompleted = parcelData.smsDataList.find { !it.isCompleted } == null
+    // 时间排序：取件码按短信时间倒序；默认排序：有柜号的靠前、柜号升序、再按取件码
+    val displaySmsDataList = if (isTimeSort) {
+        parcelData.smsDataList.sortedByDescending { it.sms.timestamp }
+    } else {
+        parcelData.smsDataList
+    }
 
     Column(
         modifier = Modifier
@@ -527,7 +550,7 @@ fun AddressCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        parcelData.smsDataList.forEach { smsData ->
+                        displaySmsDataList.forEach { smsData ->
                             if (!(((!isExpanded) && smsData.isCompleted) || ((!showCompleted) && smsData.isCompleted))) {
 
                                 Box(modifier = Modifier.padding(vertical = 6.dp)) {
@@ -633,6 +656,7 @@ fun HorizontalList(
     onTabSelected: (Int) -> Unit,
     preferLockerAddress: Boolean,
     isSeniorMode: Boolean,
+    isTimeSort: Boolean = false,
     codeNotes: Map<String, String> = emptyMap(),
     onLongPressCode: (SmsData) -> Unit = {},
 ) {
@@ -703,6 +727,7 @@ fun HorizontalList(
                         isExpanded = isExpanded,
                         preferLockerAddress = preferLockerAddress,
                         isSeniorMode = isSeniorMode,
+                        isTimeSort = isTimeSort,
                         codeNotes = codeNotes,
                         onLongPressCode = onLongPressCode,
                     )
@@ -727,6 +752,7 @@ fun List(
     onTabSelected: (Int) -> Unit = {},
     preferLockerAddress: Boolean,
     isSeniorMode: Boolean,
+    isTimeSort: Boolean = false,
 ) {
     val parcelsData by viewModel.parcelsData.collectAsState()
     val filteredParcelsData = if (showCompleted) parcelsData else parcelsData.filter { parcel ->
@@ -756,6 +782,14 @@ fun List(
         )
     }
 
+    // 时间排序模式：有未取件的地址在前，同组内按最新到件时间倒序
+    val orderedParcelsData = if (isTimeSort) {
+        filteredParcelsData.sortedWith(
+            compareByDescending<ParcelData> { it.num > 0 }
+                .thenByDescending { it.smsDataList.maxOfOrNull { s -> s.sms.timestamp } ?: 0L }
+        )
+    } else filteredParcelsData
+
     if (isHorizontalLayout && filteredParcelsData.isNotEmpty()) {
         HorizontalList(
             context = context,
@@ -764,7 +798,7 @@ fun List(
             updateAllWidget = updateAllWidget,
             showCompleted = showCompleted,
             showCodeTime = showCodeTime,
-            parcelsData = filteredParcelsData,
+            parcelsData = orderedParcelsData,
             expandedStates = expandedStates,
             selectedTabIndex = currentTabIndex,
             onTabSelected = {
@@ -773,6 +807,7 @@ fun List(
             },
             preferLockerAddress = preferLockerAddress,
             isSeniorMode = isSeniorMode,
+            isTimeSort = isTimeSort,
             codeNotes = codeNotes,
             onLongPressCode = { noteTarget = it },
         )
@@ -848,7 +883,7 @@ fun List(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(filteredParcelsData) { result ->
+            items(orderedParcelsData) { result ->
                 val isExpanded = expandedStates.value[result.address] ?: true
                 AddressCard(
                     context = context,
@@ -862,6 +897,7 @@ fun List(
                     isExpanded = isExpanded,
                     preferLockerAddress = preferLockerAddress,
                     isSeniorMode = isSeniorMode,
+                    isTimeSort = isTimeSort,
                     codeNotes = codeNotes,
                     onLongPressCode = { noteTarget = it },
                 )
@@ -955,6 +991,23 @@ private fun getShowCodeTime(context: Context): Boolean {
         prefs.getBoolean("show_code_time", true)
     } catch (_: Exception) {
         true
+    }
+}
+
+private fun saveTimeSort(context: Context, timeSort: Boolean) {
+    try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.edit { putBoolean("time_sort", timeSort) }
+    } catch (_: Exception) {
+    }
+}
+
+private fun getTimeSort(context: Context): Boolean {
+    return try {
+        val prefs = context.getSharedPreferences("parcel_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("time_sort", false)
+    } catch (_: Exception) {
+        false
     }
 }
 

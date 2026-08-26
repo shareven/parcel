@@ -4,6 +4,8 @@ This app automatically parses received SMS messages and extracts the address and
 
 You can add custom rules to improve the parsing effect.
 
+👆 Supports Long press the pickup code to add a note.
+
 ✅ Supports Taobao and Pinduoduo identity codes.
 
 🔔 Supports monitoring third-party app notifications to automatically save pickup codes—making it much easier to help friends on WeChat pick up their packages.
