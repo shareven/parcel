@@ -4,7 +4,7 @@ This app automatically parses received SMS messages and extracts the address and
 
 You can add custom rules to improve the parsing effect.
 
-👆 Supports Long press the pickup code to add a note.
+👆 Supports Long press the pickup code to add a note, or share.
 
 ✅ Supports Taobao and Pinduoduo identity codes.
 

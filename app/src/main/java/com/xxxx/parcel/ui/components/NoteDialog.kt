@@ -1,5 +1,8 @@
 package com.xxxx.parcel.ui.components
 
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -25,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,21 +37,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.xxxx.parcel.util.ThirdPartyDefaults
 
 @Composable
 fun NoteDialog(
+    context: Context,
     code: String,
+    address: String = "",
+    compartmentNumber: String = "",
     currentNote: String = "",
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     var noteText by remember { mutableStateOf(currentNote) }
+    val clipboard = LocalClipboardManager.current
+
+    // 复制/分享文本：有格口和备注就拼接，没有就不显示
+    val copyText = buildString {
+        append("取件码$code，包裹已到$address")
+        if (compartmentNumber.isNotEmpty()) append("${compartmentNumber}格口")
+        if (noteText.isNotBlank()) append("，备注：${noteText.trim()}")
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -74,50 +91,6 @@ fun NoteDialog(
                             .fillMaxSize()
                             .padding(24.dp)
                     ) {
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "取件码备注",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                IconButton(onClick = onDismiss) {
-                                    Icon(Icons.Default.Close, contentDescription = "关闭")
-                                }
-                            }
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-
-                        item {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer
-                            ) {
-                                Text(
-                                    text = code,
-                                    modifier = Modifier.padding(
-                                        horizontal = 12.dp,
-                                        vertical = 6.dp
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-
                         item {
                             OutlinedTextField(
                                 value = noteText,
@@ -145,8 +118,8 @@ fun NoteDialog(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                minLines = 3,
-                                maxLines = 5,
+                                minLines = 2,
+                                maxLines = 2,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -155,19 +128,21 @@ fun NoteDialog(
                         }
 
                         item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        item {
+                            SelectionContainer {
+                                Text(
+                                    text = copyText,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF25AF22)
+                                )
+                            }
+                        }
+
+                        item {
                             Spacer(modifier = Modifier.height(12.dp))
-                        }
-
-                        item {
-                            Text(
-                                text = "备注会显示在取件码时间的上方，清空后保存可删除备注",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(24.dp))
                         }
 
                         item {
@@ -176,17 +151,44 @@ fun NoteDialog(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 OutlinedButton(
-                                    onClick = onDismiss,
+                                    onClick = {
+                                        clipboard.setText(AnnotatedString(copyText))
+                                        Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
+                                    },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("取消")
+                                    Text("复制")
                                 }
-                                Button(
-                                    onClick = { onConfirm(noteText.trim()) },
+                                OutlinedButton(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, copyText)
+                                            setPackage(ThirdPartyDefaults.WECHAT_PACKAGE)
+                                        }
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, "未安装微信", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("确定")
+                                    Text("微信分享")
                                 }
+                            }
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+
+                        item {
+                            Button(
+                                onClick = { onConfirm(noteText.trim()) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("确定")
                             }
                         }
                     }

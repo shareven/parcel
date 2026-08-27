@@ -42,6 +42,7 @@ import com.xxxx.parcel.R
 import com.xxxx.parcel.model.ParcelData
 import com.xxxx.parcel.model.SmsData
 import com.xxxx.parcel.util.formatPickupCode
+import com.xxxx.parcel.util.getAddressMappings
 import com.xxxx.parcel.util.getCodeNotes
 import com.xxxx.parcel.util.saveCodeNote
 import com.xxxx.parcel.viewmodel.ParcelViewModel
@@ -178,8 +179,13 @@ fun ParcelList(
     }
 
     noteTarget?.let { target ->
+        // 优先显示归类标签，无映射回退原始地址
+        val mappings = remember { getAddressMappings(context) }
         NoteDialog(
+            context = context,
             code = formatPickupCode(target.code),
+            address = mappings[target.address] ?: target.address,
+            compartmentNumber = target.compartmentNumber,
             currentNote = codeNotes[target.id] ?: "",
             onDismiss = { noteTarget = null },
             onConfirm = { note ->
