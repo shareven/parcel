@@ -107,7 +107,7 @@ fun AddressCard(
                 Text(
                     text = "${parcelData.address}（${parcelData.num}）",
                     style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .weight(1f)
