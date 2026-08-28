@@ -24,7 +24,7 @@ class SmsParser {
     private val unitAfterNumberPattern: Pattern =
         Pattern.compile("""^(小时|天|日|分钟|秒|元|件|个|月|年|折)""")
     private val addressPattern: Pattern =
-        Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|快递点|门面|柜|,|，|。|$))""")
+        Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|快递点|门面|柜|,|，|。|$|[“”"'」』]))""")
     private val codePattern: Pattern = Pattern.compile(
         """(?i)(请用|取件码为|提货号为|取货码为|提货码为|取件码"|提货号"|取货码"|提货码"|凭"|取件码“|提货号“|取货码“|提货码“|凭“|取件码（|提货号（|取货码（|提货码（|凭（|取件码『|提货号『|取货码『|提货码『|凭『|取件码【|提货号【|取货码【|提货码【|凭【|取件码\(|提货号\(|取货码\(|提货码\(|凭\(|取件码\[|提货号\[|取货码\[|提货码\[|凭\[|取件码|提货号|取货码|提货码|凭|签收码|操作码|提货编码|快件编号|快件编码|快件码|提货编号|取件编码|取件编号|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[A-Za-z0-9\s-*—]{2,}(?:[，,、][A-Za-z0-9\s-*—]{2,})*"""
     )
@@ -126,7 +126,7 @@ class SmsParser {
             }
 
         }
-        foundAddress = foundAddress.replace(Regex("[,，。]"), "")  // 移除所有标点和符号
+        foundAddress = foundAddress.replace(Regex("[,，。“”\"'」』]"), "")  // 移除所有标点和符号（含引号类终止符）
         foundAddress = foundAddress.replace("取件", "")  // 移除"取件"
         return ParseResult(
             foundAddress,
