@@ -185,7 +185,9 @@ fun ParcelList(
             context = context,
             code = formatPickupCode(target.code),
             address = mappings[target.address] ?: target.address,
+            lockerNumber = target.lockerNumber,
             compartmentNumber = target.compartmentNumber,
+            preferLockerAddress = preferLockerAddress,
             currentNote = codeNotes[target.id] ?: "",
             onDismiss = { noteTarget = null },
             onConfirm = { note ->

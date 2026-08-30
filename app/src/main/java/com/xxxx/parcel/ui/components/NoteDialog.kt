@@ -52,7 +52,9 @@ fun NoteDialog(
     context: Context,
     code: String,
     address: String = "",
+    lockerNumber: String = "",
     compartmentNumber: String = "",
+    preferLockerAddress: Boolean = true,
     currentNote: String = "",
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
@@ -60,9 +62,12 @@ fun NoteDialog(
     var noteText by remember { mutableStateOf(currentNote) }
     val clipboard = LocalClipboardManager.current
 
-    // 复制/分享文本：有格口和备注就拼接，没有就不显示
+    // 复制/分享文本：有格口和备注就拼接，没有就不显示；不优先显示柜号时柜号单独拼上（地址已含柜号则不重复拼）
     val copyText = buildString {
         append("取件码$code，包裹已到$address")
+        if (!preferLockerAddress && lockerNumber.isNotEmpty() && !address.contains("${lockerNumber}号柜")) {
+            append("${lockerNumber}号柜")
+        }
         if (compartmentNumber.isNotEmpty()) append("${compartmentNumber}格口")
         if (noteText.isNotBlank()) append("，备注：${noteText.trim()}")
     }
