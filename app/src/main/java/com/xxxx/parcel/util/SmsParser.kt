@@ -17,16 +17,16 @@ class SmsParser {
     // 变体："格口"字样在前，如 "格口：23-32"、"格口 23-32"
     private val compartmentPrefixPattern: Pattern =
         Pattern.compile("""格口\s*[:：]?\s*([A-Za-z0-9\-*—_]+)""")
-    // 兜底：柜号后直接紧跟的字符，如 "7号柜23-32"
+    // 兜底：柜号后直接紧跟的字符，如 "7号柜23-32"；兼容 "5号柜领取A11" 这类带连接词写法
     private val compartmentAfterLockerPattern: Pattern =
-        Pattern.compile("""[0-9]+号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)\s*([A-Za-z0-9\-*—_]+)""")
+        Pattern.compile("""[0-9]+号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)\s*(?:领取|取件)?\s*([A-Za-z0-9\-*—_]+)""")
     // 紧跟数字后的计量单位词 → 是时长/费用等，不是格口，如 "7号柜36小时免费"
     private val unitAfterNumberPattern: Pattern =
         Pattern.compile("""^(小时|天|日|分钟|秒|元|件|个|月|年|折)""")
     private val addressPattern: Pattern =
         Pattern.compile("""(?i)(地址|收货地址|送货地址|位于|放至|已到达|到达|已到|送达|到|已放入|已存放至|已存放|放入)[\s\S]*?([\w\s-]+?(?:门牌|驿站|快递点|门面|柜|,|，|。|$|[“”"'」』]))""")
     private val codePattern: Pattern = Pattern.compile(
-        """(?i)(请用|取件码为|提货号为|取货码为|提货码为|取件码"|提货号"|取货码"|提货码"|凭"|取件码“|提货号“|取货码“|提货码“|凭“|取件码（|提货号（|取货码（|提货码（|凭（|取件码『|提货号『|取货码『|提货码『|凭『|取件码【|提货号【|取货码【|提货码【|凭【|取件码\(|提货号\(|取货码\(|提货码\(|凭\(|取件码\[|提货号\[|取货码\[|提货码\[|凭\[|取件码|提货号|取货码|提货码|凭|签收码|操作码|提货编码|快件编号|快件编码|快件码|提货编号|取件编码|取件编号|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[A-Za-z0-9\s-*—]{2,}(?:[，,、][A-Za-z0-9\s-*—]{2,})*"""
+        """(?i)(请用|取件码为|提货号为|取货码为|提货码为|取件码"|提货号"|取货码"|提货码"|凭"|取件码“|提货号“|取货码“|提货码“|凭“|取件码（|提货号（|取货码（|提货码（|凭（|取件码『|提货号『|取货码『|提货码『|凭『|取件码【|提货号【|取货码【|提货码【|凭【|取件码\(|提货号\(|取货码\(|提货码\(|凭\(|取件码\[|提货号\[|取货码\[|提货码\[|凭\[|取件码|提货号|取货码|提货码|凭|签收码|操作码|提货编码|快件编号|快件编码|快件码|提货编号|取件编码|取件编号|收货编码|签收编码|取件編號|提貨號碼|運單碼|快遞碼|快件碼|包裹碼|貨品碼)\s*[：:]?\s*[A-Za-z0-9\s-*—]{2,}(?:[，,、][A-Za-z0-9\s-*—]{2,})*"""
     )
 
     // 动态规则存储
@@ -65,12 +65,12 @@ class SmsParser {
         }
         for (keyword in customCodeKeywords) {
             val keywordMatcher = Pattern.compile(
-                """(?i)${Pattern.quote(keyword)}\s*[A-Za-z0-9\s\-*—]{2,}(?:[，,、][A-Za-z0-9\s\-*—]{2,})*"""
+                """(?i)${Pattern.quote(keyword)}\s*[：:]?\s*[A-Za-z0-9\s\-*—]{2,}(?:[，,、][A-Za-z0-9\s\-*—]{2,})*"""
             ).matcher(sms)
             if (keywordMatcher.find()) {
                 val match = keywordMatcher.group(0)
                 val codes = match?.split(Regex("[，,、]"))
-                foundCode = codes?.joinToString(", ") { it.trim() }?.replace(Regex("[^A-Za-z0-9-*—, ]"), "") ?: ""
+                foundCode = codes?.joinToString(", ") { it.trim() }?.replace(Regex("[^A-Za-z0-9-*—, ]"), "")?.trim() ?: ""
                 break
             }
         }
@@ -122,7 +122,7 @@ class SmsParser {
                 // 进一步将匹配到的内容按分隔符拆分成单个取件码
                 val codes = match?.split(Regex("[，,、]"))
                 foundCode = codes?.joinToString(", ") { it.trim() }?:""
-                foundCode = foundCode.replace(Regex("[^A-Za-z0-9-*—, ]"), "")
+                foundCode = foundCode.replace(Regex("[^A-Za-z0-9-*—, ]"), "").trim()
             }
 
         }
