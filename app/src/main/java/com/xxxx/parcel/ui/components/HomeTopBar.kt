@@ -109,7 +109,7 @@ fun HomeTopBar(
             }
 
             Spacer(Modifier.width(8.dp))
-            // 顶栏菜单：规则列表 / 监听第三方app通知 / 关于
+            // 顶栏菜单：规则列表 / 监听第三方app通知 / 关于与分享
             var showMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { showMenu = true }) {
@@ -295,7 +295,7 @@ fun HomeTopBar(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                "关于",
+                                "关于与分享",
                                 style = if (isSeniorMode) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge
                             )
                         },

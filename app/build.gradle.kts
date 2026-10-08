@@ -21,8 +21,8 @@ android {
         applicationId = "com.xxxx.parcel"
         minSdk = 29
         targetSdk = 35
-        versionCode = 68
-        versionName = "1.0.68"
+        versionCode = 69
+        versionName = "1.0.69"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -91,4 +91,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.10.1") // 添加 Core KTX
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation(libs.nayuki.qrcodegen)
 }
