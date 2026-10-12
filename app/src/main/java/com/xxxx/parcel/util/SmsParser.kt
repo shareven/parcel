@@ -8,9 +8,9 @@ class SmsParser {
     // 是否优先匹配快递柜地址
     var preferLockerAddress: Boolean = true
 
-    // 使用正则表达式来匹配地址和取件码（1个或多个取件码）优先匹配快递柜
+    // 使用正则表达式来匹配地址和取件码（1个或多个取件码）优先匹配快递柜，柜号兼容中文数字（如"四号柜"）
     val lockerPattern: Pattern =
-        Pattern.compile("""(?i)([0-9]+)号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)""")
+        Pattern.compile("""(?i)([0-9]+|[零〇一二两三四五六七八九十百]+)号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)""")
     // 格口号：优先匹配"格口"字样前的字符，如 "7号柜23-32格口"、"格口23-32"
     private val compartmentPattern: Pattern =
         Pattern.compile("""([A-Za-z0-9\-*—_]+)\s*格口""")
@@ -19,7 +19,7 @@ class SmsParser {
         Pattern.compile("""格口\s*[:：]?\s*([A-Za-z0-9\-*—_]+)""")
     // 兜底：柜号后直接紧跟的字符，如 "7号柜23-32"；兼容 "5号柜领取A11" 这类带连接词写法
     private val compartmentAfterLockerPattern: Pattern =
-        Pattern.compile("""[0-9]+号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)\s*(?:领取|取件)?\s*([A-Za-z0-9\-*—_]+)""")
+        Pattern.compile("""(?:[0-9]+|[零〇一二两三四五六七八九十百]+)号(?:柜|快递柜|丰巢柜|蜂巢柜|熊猫柜|兔喜快递柜)\s*(?:领取|取件)?\s*([A-Za-z0-9\-*—_]+)""")
     // 紧跟数字后的计量单位词 → 是时长/费用等，不是格口，如 "7号柜36小时免费"
     private val unitAfterNumberPattern: Pattern =
         Pattern.compile("""^(小时|天|日|分钟|秒|元|件|个|月|年|折)""")
@@ -79,7 +79,11 @@ class SmsParser {
         if (foundAddress.isEmpty()) {
             if (preferLockerAddress) {
                 val lockerMatcher: Matcher = lockerPattern.matcher(sms)
-                foundAddress = if (lockerMatcher.find()) lockerMatcher.group().toString() ?: "" else ""
+                foundAddress = if (lockerMatcher.find()) {
+                    // 地址里的柜号同步归一化，避免"四号柜"和"4号柜"两种显示
+                    val rawNum = lockerMatcher.group(1) ?: ""
+                    (lockerMatcher.group() ?: "").replaceFirst(rawNum, normalizeLockerNumber(rawNum))
+                } else ""
             }
 
             if (foundAddress.isEmpty()) {
@@ -95,9 +99,9 @@ class SmsParser {
             }
         }
 
-        // 始终提取柜号数字
+        // 始终提取柜号数字（中文数字柜号如"四号柜"归一化为阿拉伯数字，保证排序和展示统一）
         val lockerMatcher: Matcher = lockerPattern.matcher(sms)
-        val lockerNumber = if (lockerMatcher.find()) lockerMatcher.group(1) ?: "" else ""
+        val lockerNumber = if (lockerMatcher.find()) normalizeLockerNumber(lockerMatcher.group(1) ?: "") else ""
 
         // 始终提取格口号：优先匹配"格口"字样（前后两种写法），其次匹配柜号后紧跟的字符
         val compartmentNumber = run {
@@ -135,6 +139,27 @@ class SmsParser {
             foundAddress.isNotEmpty() && foundCode.isNotEmpty(),
             compartmentNumber
         )
+    }
+
+    // 中文数字柜号转阿拉伯数字："四"→"4"、"十五"→"15"、"二十三"→"23"、"一百零五"→"105"；解析失败返回原串
+    private fun normalizeLockerNumber(raw: String): String {
+        if (raw.isEmpty() || raw.all { it in '0'..'9' }) return raw
+        val digits = mapOf(
+            '零' to 0, '〇' to 0,
+            '一' to 1, '二' to 2, '两' to 2, '三' to 3, '四' to 4,
+            '五' to 5, '六' to 6, '七' to 7, '八' to 8, '九' to 9
+        )
+        var total = 0   // 十/百位已累计部分
+        var current = 0 // 当前个位数字
+        for (c in raw) {
+            when {
+                digits.containsKey(c) -> current = digits[c]!!
+                c == '十' -> { total += (if (current == 0) 1 else current) * 10; current = 0 }
+                c == '百' -> { total += (if (current == 0) 1 else current) * 100; current = 0 }
+                else -> return raw // 非法字符，原样返回
+            }
+        }
+        return (total + current).toString()
     }
 
     // 添加自定义解析规则

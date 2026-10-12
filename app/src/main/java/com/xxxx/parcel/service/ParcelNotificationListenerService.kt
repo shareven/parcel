@@ -3,6 +3,7 @@ package com.xxxx.parcel.service
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.app.Notification
+import android.app.Service
 import android.content.ComponentName
 import android.os.Bundle
 import android.content.Context
@@ -281,7 +282,13 @@ class ParcelNotificationListenerService : NotificationListenerService() {
         if (!fromLines.isNullOrBlank()) return fromLines
 
         // 尝试 MessagingStyle 的 android.messages（Bundle 中 text 字段）
-        val messages = extras.getParcelableArray("android.messages")
+        // API 33+ 使用带类型的重载，旧版本沿用无类型重载，行为一致
+        val messages = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            extras.getParcelableArray("android.messages", Bundle::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            extras.getParcelableArray("android.messages")
+        }
         val lastMsgText =
             messages?.lastOrNull()?.let { it as? Bundle }?.getCharSequence("text")?.toString()
         if (!lastMsgText.isNullOrBlank()) return lastMsgText
@@ -291,7 +298,8 @@ class ParcelNotificationListenerService : NotificationListenerService() {
 
     override fun onDestroy() {
         try {
-            stopForeground(true)
+            // STOP_FOREGROUND_REMOVE 与原 stopForeground(true) 语义完全一致
+            stopForeground(Service.STOP_FOREGROUND_REMOVE)
         } catch (_: Exception) {
         }
         super.onDestroy()

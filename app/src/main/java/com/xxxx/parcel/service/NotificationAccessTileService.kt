@@ -1,8 +1,10 @@
 package com.xxxx.parcel.service
 
 import android.graphics.drawable.Icon
+import android.app.PendingIntent
 import android.content.Context
 import android.content.ComponentName
+import android.os.Build
 import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
@@ -33,7 +35,14 @@ class NotificationAccessTileService : TileService() {
         val mainEnabled = getMainSwitch(this)
         if (!hasAccess) {
             val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivityAndCollapse(intent)
+            // API 34+ 使用 PendingIntent 版本；旧版本沿用 Intent 版本，行为一致
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                startActivityAndCollapse(pi)
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(intent)
+            }
         } else {
             setMainSwitch(this, !mainEnabled)
             if (!mainEnabled) {

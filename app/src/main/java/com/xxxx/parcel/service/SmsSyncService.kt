@@ -50,7 +50,7 @@ class SmsSyncService : Service() {
                 } catch (_: Exception) {}
                 addLog(this, "短信前台服务刷新完成并广播更新")
             } catch (e: Exception) { addLog(this, "短信服务出错: ${e.message}") }
-            try { stopForeground(true) } catch (_: Exception) {}
+            try { stopForeground(Service.STOP_FOREGROUND_REMOVE) } catch (_: Exception) {}
             stopSelf()
         }.start()
         return START_STICKY
