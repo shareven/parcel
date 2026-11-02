@@ -84,7 +84,12 @@ fun NotifySmsBanner(
                             else MaterialTheme.typography.bodyLarge
                         )
                     }
-                    TextButton(onClick = onDismiss) {
+                    Box(modifier = Modifier.width(12.dp)) // 按钮间距
+                    TextButton(
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 16.dp, vertical = 4.dp
+                        ),
+                        onClick = onDismiss) {
                         Text(
                             text = "不再提示",
                             style = if (isSeniorMode) MaterialTheme.typography.headlineSmall
