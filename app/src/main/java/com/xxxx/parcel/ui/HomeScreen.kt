@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.xxxx.parcel.MainActivity
 import com.xxxx.parcel.ui.components.HomeTopBar
+import com.xxxx.parcel.ui.components.NotifySmsBanner
 import com.xxxx.parcel.ui.components.ParcelList
 import com.xxxx.parcel.ui.components.TimeFilterSheet
 import com.xxxx.parcel.ui.components.timeFilterOptions
@@ -52,6 +53,9 @@ fun HomeScreen(
     updateAllWidget: () -> Unit,
     isSeniorMode: Boolean,
     onSeniorModeChanged: (Boolean) -> Unit,
+    showNotifySmsBanner: Boolean = false,
+    onGoNotifyPermission: () -> Unit = {},
+    onDismissNotifyBanner: () -> Unit = {},
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     var showCompleted by remember { mutableStateOf(getShowCompleted(context)) }
@@ -125,28 +129,38 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (hasPermission) ParcelList(
-                context = context,
-                viewModel = viewModel,
-                navController = navController,
-                updateAllWidget = updateAllWidget,
-                showCompleted = showCompleted,
-                showCodeTime = showCodeTime,
-                showCompartment = showCompartment,
-                isHorizontalLayout = isHorizontalLayout,
-                preferLockerAddress = preferLockerAddress,
-                isSeniorMode = isSeniorMode,
-                isTimeSort = isTimeSort
-            ) else
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Button(onClick = { onCallBack() }) {
-                        Text("获取短信权限")
-                    }
+            Column(modifier = Modifier.fillMaxSize()) {
+                // HyperOS「通知类短信」权限提醒横幅（TopAppBar 之下、列表之上）
+                if (hasPermission && showNotifySmsBanner) {
+                    NotifySmsBanner(
+                        isSeniorMode = isSeniorMode,
+                        onGoSettings = onGoNotifyPermission,
+                        onDismiss = onDismissNotifyBanner
+                    )
                 }
+                if (hasPermission) ParcelList(
+                    context = context,
+                    viewModel = viewModel,
+                    navController = navController,
+                    updateAllWidget = updateAllWidget,
+                    showCompleted = showCompleted,
+                    showCodeTime = showCodeTime,
+                    showCompartment = showCompartment,
+                    isHorizontalLayout = isHorizontalLayout,
+                    preferLockerAddress = preferLockerAddress,
+                    isSeniorMode = isSeniorMode,
+                    isTimeSort = isTimeSort
+                ) else
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Button(onClick = { onCallBack() }) {
+                            Text("获取短信权限")
+                        }
+                    }
+            }
         }
         if (showBottomSheet) TimeFilterSheet(
             isSeniorMode = isSeniorMode,

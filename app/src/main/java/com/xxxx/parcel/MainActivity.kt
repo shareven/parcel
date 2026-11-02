@@ -59,7 +59,9 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Build
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.xxxx.parcel.widget.ParcelWidgetXL
 import com.xxxx.parcel.service.ParcelNotificationListenerService
 import com.xxxx.parcel.ui.LogScreen
@@ -78,6 +80,7 @@ import androidx.compose.ui.unit.sp
 class MainActivity : ComponentActivity() {
     private val hasPermissionState = mutableStateOf(false)
     internal val isSeniorModeState = mutableStateOf(false)
+    private val notifySmsBannerState = mutableStateOf(false)
     private lateinit var smsContentObserver: ContentObserver
     private lateinit var appDetailsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
@@ -131,7 +134,13 @@ class MainActivity : ComponentActivity() {
                 guideToSettings = { guideToSettings() },
                 readAndParseSms = { readAndParseSms() },
                 updateAllWidget = { updateAllWidget() },
-                isSeniorMode = isSeniorModeState.value
+                isSeniorMode = isSeniorModeState.value,
+                showNotifySmsBanner = notifySmsBannerState.value,
+                onGoNotifyPermission = { PermissionUtil.requestMiuiSmsPermission(this) },
+                onDismissNotifyBanner = {
+                    PermissionUtil.setNotifySmsPromptDismissed(this)
+                    notifySmsBannerState.value = false
+                }
             )
         }
     }
@@ -313,6 +322,27 @@ class MainActivity : ComponentActivity() {
         appDetailsLauncher.launch(intent)
     }
 
+    // 检测 HyperOS「通知类短信」权限是否疑似被拒，决定首页横幅显示状态
+    private fun checkNotifySmsBanner() {
+        if (!PermissionUtil.isMIUI() || !hasPermissionState.value) {
+            notifySmsBannerState.value = false
+            return
+        }
+        lifecycleScope.launch {
+            val show = withContext(Dispatchers.IO) {
+                !PermissionUtil.isNotifySmsPromptDismissed(context) &&
+                        PermissionUtil.isNotificationSmsLikelyFiltered(context)
+            }
+            notifySmsBannerState.value = show
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 从设置页返回时重新探测，权限恢复后横幅自动消失
+        checkNotifySmsBanner()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         // 取消短信删除监控
@@ -356,7 +386,10 @@ fun App(
         guideToSettings: () -> Unit,
         readAndParseSms: () -> Unit,
         updateAllWidget: () -> Unit,
-        isSeniorMode: Boolean
+        isSeniorMode: Boolean,
+        showNotifySmsBanner: Boolean = false,
+        onGoNotifyPermission: () -> Unit = {},
+        onDismissNotifyBanner: () -> Unit = {},
     ) {
         ParcelTheme(isSeniorMode = isSeniorMode) {
         val navController = rememberNavController()
@@ -428,7 +461,10 @@ fun App(
                         onSeniorModeChanged = { new ->
                             saveSeniorMode(context, new)
                             updateAllWidget()
-                        }
+                        },
+                        showNotifySmsBanner = showNotifySmsBanner,
+                        onGoNotifyPermission = onGoNotifyPermission,
+                        onDismissNotifyBanner = onDismissNotifyBanner
                     )
                 }
                 composable(
